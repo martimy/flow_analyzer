@@ -1,13 +1,6 @@
 # Flow Analyzer
 
-This is a Python app built with Streamlit that analyzes traffic flow in a network. It uses the following libraries:
-
-- Streamlit
-- NetworkX
-- Pydot
-- Matplotlib
-- Pandas
-
+This is a Python app built with Streamlit that analyzes traffic flow in a network.
 
 ## Installation
 
@@ -38,16 +31,16 @@ To analyze a network, you can upload a text file containing the network in DOT f
 
 Alternatively, you can use the built-in example network by checking the "Use example network" checkbox.
 
-# Input
+## Input
 
 The App takes in the form of traffic requirements between an pair of nodes in the network.
 
- 
-# Output
+
+## Output
 
 The app generates the following output:
 
-## Edge information
+### Edge information
 
 The app displays information about the capacity and traffic flow on each edge in the network in a table. The table includes the following columns:
 
@@ -56,7 +49,7 @@ Dst: The destination node of the edge.
 Tx: The amount of traffic transmitted on the edge.
 Rx: The amount of traffic received on the edge.
 
-## Node information
+### Node information
 
 The app displays information about the traffic flow at each node in the network in a table. The table includes the following columns:
 
@@ -65,6 +58,6 @@ Tx: The amount of traffic transmitted by the node.
 Rx: The amount of traffic received by the node.
 
 
-## Graph visualization
+### Graph visualization
 
 The app also displays a visualization of the network using Matplotlib. The nodes are positioned using the spring layout algorithm, and the edges are drawn as arrows with labels indicating the amount of traffic flow.

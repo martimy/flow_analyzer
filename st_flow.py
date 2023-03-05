@@ -149,10 +149,10 @@ if uploaded_file is not None:
 
     # display tables
     st.write("Edge Information")
-    st.table(df_edge)
+    st.table(df_edge[(df_edge['Tx'] > 0) & (df_edge['Rx'] > 0)])
 
     st.write("Node Information")
-    st.table(df_node)
+    st.table(df_node[(df_node['Tx'] > 0) | (df_node['Rx'] > 0)])
 
     # Draw the graph
     fig, ax = plt.subplots()
