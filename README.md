@@ -2,6 +2,8 @@
 
 This is a Python app built with Streamlit that analyzes traffic flow in a network.
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://martimy-flow-analyzer-st-flow-0p35h8.streamlit.app/)
+
 ## Installation
 
 Clone this repository to your local machine using this command:
