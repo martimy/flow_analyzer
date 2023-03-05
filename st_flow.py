@@ -23,38 +23,47 @@ ABOUT = "This app analyzes traffic flow in a network."
 NO_RELATION = ":heavy_check_mark: No anomalies detected."
 EXAMPLE_HELP = "Use built-in example to demo the app."
 UPLOAD_FILE = "Upload a file"
-
+EXAMPE_NETWORK = """
+graph {
+1 -- 2;
+2 -- 3;
+3 -- 4;
+4 -- 1;
+A -- 1;
+B -- 2;
+C -- 3;
+D -- 4;
+}
+"""
 
 def add_capacity(G, s, d, b):
-    mylist = nx.shortest_path(G, source=s, target=d)
-    zipped = list(zip(mylist[0:], mylist[1:]))
+    """Adds amount of traffic to edges and nodes along the shortest path"""
+    
+    nodes_list = nx.shortest_path(G, source=s, target=d)
+    edges = list(zip(nodes_list[0:], nodes_list[1:]))
 
-    for x, y in zipped:
+    # Add traffic to edges in both directions
+    for x, y in edges:
         G[x][y]['tx'] += b
         G[y][x]['rx'] += b
 
-    for x, y in zipped:
         G[x][y]['bw'] = max(G[x][y]['tx'], G[y][x]['rx'],
                             G[x][y]['rx'], G[y][x]['tx'])
         G[y][x]['bw'] = G[x][y]['bw']
 
+    # Add traffic to source and traget nodes
+    # The source transmits only and target receives only
     G.nodes[d]['trx'] += b
     G.nodes[s]['ttx'] += b
+    
+    # All other intermediate nodes receive then transmit the same 
+    # amount of traffic
+    if len(nodes_list) > 2:
+        for n in nodes_list[1:-1]:
+            G.nodes[n]['trx'] += b
+            G.nodes[n]['ttx'] += b
+            
 
-
-# Define the graph in DOT format (in this case, an example graph is used)
-EXAMPE_NETWORK = """
-graph {
-    1 -- 2;
-    2 -- 3;
-    3 -- 4;
-    4 -- 1;
-    A -- 1;
-    B -- 2;
-    C -- 3;
-    D -- 4;
-}
-"""
 
 st.title(TITLE)
 
@@ -115,7 +124,8 @@ if uploaded_file is not None:
     convert_dict = {'Source': str, 'Target': str}
     df = df.astype(convert_dict)
 
-    df_flows = st.experimental_data_editor(df, num_rows="dynamic", use_container_width=True)
+    df_flows = st.experimental_data_editor(
+        df, num_rows="dynamic", use_container_width=True)
 
     for index, row in df_flows.iterrows():
         # Check for errors
@@ -132,36 +142,31 @@ if uploaded_file is not None:
         except:
             st.error(f"Input error in line {index}")
 
-    # Display the graph
-    # st.graphviz_chart(graph_str)
-    # st.graphviz_chart(graph)
-    # st.graphviz_chart(nx.nx_pydot.to_pydot(G))
-
     # Display the edge capacities
-    # for x, y in G.edges:
-    #     st.write(f"{x},{y} , {G[x][y]['tx']}, , {G[x][y]['rx']}")
     edge_data = [[x, y, G[x][y]['tx'], G[x][y]['rx']] for x, y in G.edges]
-    df_edge = pd.DataFrame(edge_data, columns=("Src", "Dst", "Tx", "Rx"))
+    df_edge = pd.DataFrame(edge_data, columns=("Source", "Target", "Tx", "Rx"))
 
     # Display the node attributes
     node_data = [[n, G.nodes[n]['ttx'], G.nodes[n]['trx']] for n in G.nodes]
-    df_node = pd.DataFrame(node_data, columns=("Node", "Tx", "Rx"))
+    df_node = pd.DataFrame(node_data, columns=("Node", "Outbound", "Inbound"))
 
     # display tables
     st.write("Edge Information")
     st.table(df_edge[(df_edge['Tx'] > 0) & (df_edge['Rx'] > 0)])
 
     st.write("Node Information")
-    st.table(df_node[(df_node['Tx'] > 0) | (df_node['Rx'] > 0)])
+    st.table(df_node[(df_node['Outbound'] > 0) | (df_node['Inbound'] > 0)])
 
     # Draw the graph
-    fig, ax = plt.subplots()
+    st.write("Network Topology")
+    # fig, ax = plt.subplots()
+    fig = plt.figure()
     pos = nx.spring_layout(G)  # positions for all nodes
-    nx.draw_networkx_nodes(G, pos, node_size=500)
+    nx.draw_networkx_nodes(G, pos, node_size=400)
     nx.draw_networkx_edges(G, pos, width=1)
     nx.draw_networkx_edge_labels(
         G, pos, edge_labels=nx.get_edge_attributes(G, 'bw'))
-    nx.draw_networkx_labels(G, pos, font_size=20, font_family="sans-serif")
+    nx.draw_networkx_labels(G, pos, font_size=16, font_family="sans-serif")
     st.pyplot(fig)
 
 else:
