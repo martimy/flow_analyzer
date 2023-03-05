@@ -23,18 +23,7 @@ ABOUT = "This app analyzes traffic flow in a network."
 NO_RELATION = ":heavy_check_mark: No anomalies detected."
 EXAMPLE_HELP = "Use built-in example to demo the app."
 UPLOAD_FILE = "Upload a file"
-EXAMPE_NETWORK = """
-graph {
-1 -- 2;
-2 -- 3;
-3 -- 4;
-4 -- 1;
-A -- 1;
-B -- 2;
-C -- 3;
-D -- 4;
-}
-"""
+EXAMPE_NETWORK = "graph {1 -- 2;2 -- 3;3 -- 4;4 -- 1;A -- 1;B -- 2;C -- 3;D -- 4;}"
 
 def add_capacity(G, s, d, b):
     """Adds amount of traffic to edges and nodes along the shortest path"""
