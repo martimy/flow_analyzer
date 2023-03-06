@@ -52,7 +52,6 @@ def add_capacity(G, s, d, b):
             G.nodes[n]['ttx'] += b
             
 
-
 # File upload
 with st.sidebar:
     uploaded_file = st.file_uploader("Upload Network", type="dot", help=UPLOAD_HELP)
@@ -69,8 +68,6 @@ st.markdown(ABOUT)
 
 # Inject CSS with Markdown
 st.markdown(hide_table_row_index, unsafe_allow_html=True)
-
-
 
 
 if uploaded_file is not None:
@@ -133,13 +130,13 @@ if uploaded_file is not None:
     # Display the edge capacities
     edge_data = [[x, y, G[x][y]['tx'], G[x][y]['rx']] for x, y in G.edges]
     df_edge = pd.DataFrame(edge_data, columns=("Source", "Target", "Tx", "Rx"))
-    st.write("Edge Information")
+    st.write("Edge Traffic")
     st.table(df_edge[(df_edge['Tx'] > 0) | (df_edge['Rx'] > 0)])
 
     # Display the node attributes
     node_data = [[n, G.nodes[n]['ttx'], G.nodes[n]['trx']] for n in G.nodes]
     df_node = pd.DataFrame(node_data, columns=("Node", "Outbound", "Inbound"))
-    st.write("Node Information")
+    st.write("Node Traffic")
     st.table(df_node[(df_node['Outbound'] > 0) | (df_node['Inbound'] > 0)])
 
     # Draw the graph
@@ -147,11 +144,11 @@ if uploaded_file is not None:
     # fig, ax = plt.subplots()
     fig = plt.figure()
     pos = nx.spring_layout(G)  # positions for all nodes
-    nx.draw_networkx_nodes(G, pos, node_size=400)
+    nx.draw_networkx_nodes(G, pos, node_size=500)
     nx.draw_networkx_edges(G, pos, width=1)
     nx.draw_networkx_edge_labels(
         G, pos, edge_labels=nx.get_edge_attributes(G, 'bw'))
-    nx.draw_networkx_labels(G, pos, font_size=16, font_family="sans-serif")
+    nx.draw_networkx_labels(G, pos, font_size=10, font_family="sans-serif")
     st.pyplot(fig)
 
 else:

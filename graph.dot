@@ -1,10 +1,10 @@
 graph {
-    1 -- 2;
-    2 -- 3;
-    3 -- 4;
-    4 -- 1;
-    A -- 1;
-    B -- 2;
-    C -- 3;
-    D -- 4;    
+    R1 -- R2;
+    R2 -- R3;
+    R3 -- R4;
+    R4 -- R1;
+    Client_A -- R1;
+    Client_B -- R2;
+    Client_C -- R3;
+    Server -- R4;    
 }
