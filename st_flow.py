@@ -20,9 +20,8 @@ hide_table_row_index = """
             """
 TITLE = "Flow Analyzer"
 ABOUT = "This app analyzes traffic flow in a network."
-NO_RELATION = ":heavy_check_mark: No anomalies detected."
-EXAMPLE_HELP = "Use built-in example to demo the app."
-UPLOAD_FILE = "Upload a file"
+UPLOAD_HELP = "Upload a network topology in DOT format."
+UPLOAD_FILE = "Upload a file or use demo network."
 EXAMPE_NETWORK = "graph {1 -- 2;2 -- 3;3 -- 4;4 -- 1;A -- 1;B -- 2;C -- 3;D -- 4;}"
 
 def add_capacity(G, s, d, b):
@@ -54,24 +53,24 @@ def add_capacity(G, s, d, b):
             
 
 
+# File upload
+with st.sidebar:
+    uploaded_file = st.file_uploader("Upload Network", type="dot", help=UPLOAD_HELP)
+
+    # The checkbox is enabled when no file is uploaded
+    show_ex = uploaded_file is not None
+    use_demo_network = st.checkbox(
+        'Use demo network', value=False, disabled=show_ex)
+    if use_demo_network:
+        uploaded_file = EXAMPE_NETWORK
+
 st.title(TITLE)
+st.markdown(ABOUT)
 
 # Inject CSS with Markdown
 st.markdown(hide_table_row_index, unsafe_allow_html=True)
 
-with st.expander("About", expanded=True):
-    st.markdown(ABOUT)
 
-
-# File upload
-uploaded_file = st.file_uploader("Upload Network File", type="txt")
-
-# The checkbox is enabled when no file is uploaded
-show_ex = uploaded_file is not None
-use_example = st.checkbox(
-    'Use example network', value=False, disabled=show_ex, help=EXAMPLE_HELP)
-if use_example:
-    uploaded_file = EXAMPE_NETWORK
 
 
 if uploaded_file is not None:
@@ -134,15 +133,12 @@ if uploaded_file is not None:
     # Display the edge capacities
     edge_data = [[x, y, G[x][y]['tx'], G[x][y]['rx']] for x, y in G.edges]
     df_edge = pd.DataFrame(edge_data, columns=("Source", "Target", "Tx", "Rx"))
+    st.write("Edge Information")
+    st.table(df_edge[(df_edge['Tx'] > 0) | (df_edge['Rx'] > 0)])
 
     # Display the node attributes
     node_data = [[n, G.nodes[n]['ttx'], G.nodes[n]['trx']] for n in G.nodes]
     df_node = pd.DataFrame(node_data, columns=("Node", "Outbound", "Inbound"))
-
-    # display tables
-    st.write("Edge Information")
-    st.table(df_edge[(df_edge['Tx'] > 0) & (df_edge['Rx'] > 0)])
-
     st.write("Node Information")
     st.table(df_node[(df_node['Outbound'] > 0) | (df_node['Inbound'] > 0)])
 
