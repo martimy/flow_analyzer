@@ -33,11 +33,10 @@ def add_capacity(G, s, d, b):
     # Add traffic to edges in both directions
     for x, y in edges:
         G[x][y]['tx'] += b
-        G[y][x]['rx'] += b
+        # G[y][x]['rx'] += b
 
-        G[x][y]['bw'] = max(G[x][y]['tx'], G[y][x]['rx'],
-                            G[x][y]['rx'], G[y][x]['tx'])
-        G[y][x]['bw'] = G[x][y]['bw']
+        G[x][y]['bw'] = max(G[x][y]['tx'], G[y][x]['tx'])
+        # G[y][x]['bw'] = G[x][y]['bw']
 
     # Add traffic to source and traget nodes
     # The source transmits only and target receives only
@@ -94,9 +93,9 @@ if uploaded_file is not None:
         source_node = edge.get_source()
         dest_node = edge.get_destination()
         # Set the edge's capacity attribute
-        G.add_edge(source_node, dest_node, tx=0, rx=0, bw=0)
+        G.add_edge(source_node, dest_node, tx=0, bw=0)
         # Set the edge's capacity attribute
-        G.add_edge(dest_node, source_node, tx=0, rx=0, bw=0)
+        G.add_edge(dest_node, source_node, tx=0, bw=0)
         G.nodes[source_node]['ttx'] = 0
         G.nodes[source_node]['trx'] = 0
         G.nodes[dest_node]['ttx'] = 0
@@ -124,14 +123,14 @@ if uploaded_file is not None:
             else:
                 st.error(f"Input error in line {index}")
                 continue
-        except:
-            st.error(f"Input error in line {index}")
+        except Exception as e:
+            st.error(f"Input error in line gg {index} {e}")
 
     # Display the edge capacities
-    edge_data = [[x, y, G[x][y]['tx'], G[x][y]['rx']] for x, y in G.edges]
-    df_edge = pd.DataFrame(edge_data, columns=("Source", "Target", "Tx", "Rx"))
+    edge_data = [[x, y, G[x][y]['tx']] for x, y in G.edges]
+    df_edge = pd.DataFrame(edge_data, columns=("Source", "Target", "Tx"))
     st.write("Edge Traffic")
-    st.table(df_edge[(df_edge['Tx'] > 0) | (df_edge['Rx'] > 0)])
+    st.table(df_edge[(df_edge['Tx'] > 0)])
 
     # Display the node attributes
     node_data = [[n, G.nodes[n]['ttx'], G.nodes[n]['trx']] for n in G.nodes]
@@ -145,7 +144,7 @@ if uploaded_file is not None:
     fig = plt.figure()
     pos = nx.spring_layout(G)  # positions for all nodes
     nx.draw_networkx_nodes(G, pos, node_size=500)
-    nx.draw_networkx_edges(G, pos, width=1)
+    nx.draw_networkx_edges(G, pos, width=1, arrows=False)
     nx.draw_networkx_edge_labels(
         G, pos, edge_labels=nx.get_edge_attributes(G, 'bw'))
     nx.draw_networkx_labels(G, pos, font_size=10, font_family="sans-serif")
