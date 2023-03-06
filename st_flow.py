@@ -36,7 +36,7 @@ def add_capacity(G, s, d, b):
         # G[y][x]['rx'] += b
 
         G[x][y]['bw'] = max(G[x][y]['tx'], G[y][x]['tx'])
-        # G[y][x]['bw'] = G[x][y]['bw']
+        G[y][x]['bw'] = G[x][y]['bw']
 
     # Add traffic to source and traget nodes
     # The source transmits only and target receives only
@@ -101,8 +101,9 @@ if uploaded_file is not None:
         G.nodes[dest_node]['ttx'] = 0
         G.nodes[dest_node]['trx'] = 0
 
+    st.write(G.nodes)
     # Allow user to edit dataframe
-    st.write('Edit the table below to add capacities to edges:')
+    st.write('Edit the table below to enter traffic information:')
 
     df = pd.DataFrame({'Source': [], 'Target': [], 'Flow': []})
     convert_dict = {'Source': str, 'Target': str}
@@ -114,17 +115,17 @@ if uploaded_file is not None:
     for index, row in df_flows.iterrows():
         # Check for errors
         try:
-            source = '' if row['Source'] is None else row['Source'][0]
-            target = '' if row['Target'] is None else row['Target'][0]
-            flow = 0 if row['Flow'] is None else row['Flow']
+            source = row.get('Source','')
+            target = row.get('Target','')
+            flow = row.get('Flow',0)
 
             if (source in G.nodes) and (target in G.nodes) and (flow > 0):
                 add_capacity(G, row['Source'], row['Target'], row['Flow'])
             else:
-                st.error(f"Input error in line {index}")
+                st.error(f"Input error in line {index}.")
                 continue
-        except Exception as e:
-            st.error(f"Input error in line gg {index} {e}")
+        except:
+            st.error(f"Input error in line {index}")
 
     # Display the edge capacities
     edge_data = [[x, y, G[x][y]['tx']] for x, y in G.edges]
