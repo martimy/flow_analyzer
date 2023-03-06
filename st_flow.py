@@ -64,7 +64,7 @@ with st.sidebar:
         uploaded_file = EXAMPE_NETWORK
 
     flow_file = st.file_uploader("Upload Flow Information", type="csv", help=UPLOAD_FLOW_HELP)
-  
+
 
 st.title(TITLE)
 st.markdown(ABOUT)
@@ -105,6 +105,7 @@ if uploaded_file is not None:
         G.nodes[dest_node]['ttx'] = 0
         G.nodes[dest_node]['trx'] = 0
 
+    
     # Allow user to edit dataframe
     st.write('Edit the table below to enter traffic information:')
 
@@ -147,15 +148,30 @@ if uploaded_file is not None:
 
     # Draw the graph
     st.write("Network Topology")
-    # fig, ax = plt.subplots()
-    fig = plt.figure()
-    pos = nx.spring_layout(G)  # positions for all nodes
+    fig, _ = plt.subplots()
+    # fig = plt.figure()
+    
+    # pos = nx.spring_layout(G)  # positions for all nodes
+    if 'pos' not in st.session_state:
+        st.session_state.pos = nx.spring_layout(G)
+        
+    pos = st.session_state.pos
     nx.draw_networkx_nodes(G, pos, node_size=500)
     nx.draw_networkx_edges(G, pos, width=1, arrows=False)
     nx.draw_networkx_edge_labels(
         G, pos, edge_labels=nx.get_edge_attributes(G, 'bw'))
     nx.draw_networkx_labels(G, pos, font_size=10, font_family="sans-serif")
+    
+    if st.checkbox("Show Flows", False):
+        df_flows.columns = df_flows.columns.str.lower()
+        G2 = nx.from_pandas_edgelist(df_flows, edge_attr=True)
+        nx.draw_networkx_edges(G2, pos, width=3, edge_color='r', alpha=0.3)
+        
     st.pyplot(fig)
 
 else:
+    # Remove all keys
+    for key in st.session_state.keys():
+        del st.session_state[key]
+
     st.error(UPLOAD_FILE)
