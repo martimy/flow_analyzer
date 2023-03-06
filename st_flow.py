@@ -29,7 +29,7 @@ def add_capacity(G, s, d, b):
     """Adds amount of traffic to edges and nodes along the shortest path"""
     
     nodes_list = nx.shortest_path(G, source=s, target=d)
-    edges = list(zip(nodes_list[0:], nodes_list[1:]))
+    edges = list(zip(nodes_list, nodes_list[1:]))
 
     # Add traffic to edges in both directions
     for x, y in edges:
@@ -54,16 +54,17 @@ def add_capacity(G, s, d, b):
 
 # File upload
 with st.sidebar:
-    uploaded_file = st.file_uploader("Upload Network", type="dot", help=UPLOAD_HELP)
-
-    # The checkbox is enabled when no file is uploaded
-    show_ex = uploaded_file is not None
-    use_demo_network = st.checkbox(
-        'Use demo network', value=False, disabled=show_ex)
-    if use_demo_network:
-        uploaded_file = EXAMPE_NETWORK
-
-    flow_file = st.file_uploader("Upload Flow Information", type="csv", help=UPLOAD_FLOW_HELP)
+    with st.expander("Input Files:", expanded=False):
+        uploaded_file = st.file_uploader("Upload Network", type="dot", help=UPLOAD_HELP)
+    
+        # The checkbox is enabled when no file is uploaded
+        show_ex = uploaded_file is not None
+        use_demo_network = st.checkbox(
+            'Use demo network', value=False, disabled=show_ex)
+        if use_demo_network:
+            uploaded_file = EXAMPE_NETWORK
+    
+        flow_file = st.file_uploader("Upload Flow Information", type="csv", help=UPLOAD_FLOW_HELP)
 
 
 st.title(TITLE)
@@ -162,11 +163,23 @@ if uploaded_file is not None:
         G, pos, edge_labels=nx.get_edge_attributes(G, 'bw'))
     nx.draw_networkx_labels(G, pos, font_size=10, font_family="sans-serif")
     
-    if st.checkbox("Show Flows", False):
-        df_flows.columns = df_flows.columns.str.lower()
-        G2 = nx.from_pandas_edgelist(df_flows, edge_attr=True)
-        nx.draw_networkx_edges(G2, pos, width=3, edge_color='r', alpha=0.3)
         
+    with st.sidebar:
+        st.write("Graph Options:")
+        if st.checkbox("Show Flows", False):
+            df_flows.columns = df_flows.columns.str.lower()
+            G2 = nx.from_pandas_edgelist(df_flows, edge_attr=True)
+            nx.draw_networkx_edges(G2, pos, width=3, edge_color='r', alpha=0.3)
+
+        if st.checkbox("Show Routes", False):
+            df_flows.columns = df_flows.columns.str.lower()
+            G2 = nx.from_pandas_edgelist(df_flows, edge_attr=True)
+            for s, t in G2.edges:
+                path = nx.shortest_path(G, source=s, target=t)
+                path_edges = list(zip(path, path[1:]))
+                nx.draw_networkx_nodes(G, pos, nodelist=[s, t], node_color='g', alpha=0.3)
+                nx.draw_networkx_edges(G, pos, edgelist=path_edges, arrows=False, edge_color='g', width = 5, alpha=0.3)
+
     st.pyplot(fig)
 
 else:
