@@ -21,6 +21,7 @@ hide_table_row_index = """
 TITLE = "Flow Analyzer"
 ABOUT = "This app analyzes traffic flow in a network."
 UPLOAD_HELP = "Upload a network topology in DOT format."
+UPLOAD_FLOW_HELP = "Upload traffic flow information in csv format."
 UPLOAD_FILE = "Upload a file or use demo network."
 EXAMPE_NETWORK = "graph {1 -- 2;2 -- 3;3 -- 4;4 -- 1;A -- 1;B -- 2;C -- 3;D -- 4;}"
 
@@ -62,6 +63,9 @@ with st.sidebar:
     if use_demo_network:
         uploaded_file = EXAMPE_NETWORK
 
+    flow_file = st.file_uploader("Upload Flow Information", type="csv", help=UPLOAD_FLOW_HELP)
+  
+
 st.title(TITLE)
 st.markdown(ABOUT)
 
@@ -101,13 +105,15 @@ if uploaded_file is not None:
         G.nodes[dest_node]['ttx'] = 0
         G.nodes[dest_node]['trx'] = 0
 
-    st.write(G.nodes)
     # Allow user to edit dataframe
     st.write('Edit the table below to enter traffic information:')
 
-    df = pd.DataFrame({'Source': [], 'Target': [], 'Flow': []})
-    convert_dict = {'Source': str, 'Target': str}
-    df = df.astype(convert_dict)
+    if flow_file is None:
+        df = pd.DataFrame({'Source': [], 'Target': [], 'Flow': []})
+        convert_dict = {'Source': str, 'Target': str}
+        df = df.astype(convert_dict)
+    else:
+        df = pd.read_csv(flow_file)    
 
     df_flows = st.experimental_data_editor(
         df, num_rows="dynamic", use_container_width=True)
