@@ -25,9 +25,10 @@ UPLOAD_FLOW_HELP = "Upload traffic flow information in csv format."
 UPLOAD_FILE = "Upload a file or use demo network."
 EXAMPE_NETWORK = "graph {1 -- 2;2 -- 3;3 -- 4;4 -- 1;A -- 1;B -- 2;C -- 3;D -- 4;}"
 
+
 def add_capacity(G, s, d, b):
     """Adds amount of traffic to edges and nodes along the shortest path"""
-    
+
     nodes_list = nx.shortest_path(G, source=s, target=d)
     edges = list(zip(nodes_list, nodes_list[1:]))
 
@@ -43,28 +44,29 @@ def add_capacity(G, s, d, b):
     # The source transmits only and target receives only
     G.nodes[d]['trx'] += b
     G.nodes[s]['ttx'] += b
-    
-    # All other intermediate nodes receive then transmit the same 
+
+    # All other intermediate nodes receive then transmit the same
     # amount of traffic
     if len(nodes_list) > 2:
         for n in nodes_list[1:-1]:
             G.nodes[n]['trx'] += b
             G.nodes[n]['ttx'] += b
-            
+
 
 # File upload
 with st.sidebar:
-    with st.expander("Input Files:", expanded=False):
-        uploaded_file = st.file_uploader("Upload Network", type="dot", help=UPLOAD_HELP)
-    
-        # The checkbox is enabled when no file is uploaded
-        show_ex = uploaded_file is not None
-        use_demo_network = st.checkbox(
-            'Use demo network', value=False, disabled=show_ex)
-        if use_demo_network:
-            uploaded_file = EXAMPE_NETWORK
-    
-        flow_file = st.file_uploader("Upload Flow Information", type="csv", help=UPLOAD_FLOW_HELP)
+    uploaded_file = st.file_uploader(
+        "Upload Network", type="dot", help=UPLOAD_HELP)
+
+    # The checkbox is enabled when no file is uploaded
+    show_ex = uploaded_file is not None
+    use_demo_network = st.checkbox(
+        'Use demo network', value=False, disabled=show_ex)
+    if use_demo_network:
+        uploaded_file = EXAMPE_NETWORK
+
+    flow_file = st.file_uploader(
+        "Upload Flow Information", type="csv", help=UPLOAD_FLOW_HELP)
 
 
 st.title(TITLE)
@@ -106,7 +108,6 @@ if uploaded_file is not None:
         G.nodes[dest_node]['ttx'] = 0
         G.nodes[dest_node]['trx'] = 0
 
-    
     # Allow user to edit dataframe
     st.write('Edit the table below to enter traffic information:')
 
@@ -115,7 +116,7 @@ if uploaded_file is not None:
         convert_dict = {'Source': str, 'Target': str}
         df = df.astype(convert_dict)
     else:
-        df = pd.read_csv(flow_file)    
+        df = pd.read_csv(flow_file)
 
     df_flows = st.experimental_data_editor(
         df, num_rows="dynamic", use_container_width=True)
@@ -123,9 +124,9 @@ if uploaded_file is not None:
     for index, row in df_flows.iterrows():
         # Check for errors
         try:
-            source = row.get('Source','')
-            target = row.get('Target','')
-            flow = row.get('Flow',0)
+            source = row.get('Source', '')
+            target = row.get('Target', '')
+            flow = row.get('Flow', 0)
 
             if (source in G.nodes) and (target in G.nodes) and (flow > 0):
                 add_capacity(G, row['Source'], row['Target'], row['Flow'])
@@ -151,34 +152,48 @@ if uploaded_file is not None:
     st.write("Network Topology")
     fig, _ = plt.subplots()
     # fig = plt.figure()
-    
+
     # pos = nx.spring_layout(G)  # positions for all nodes
     if 'pos' not in st.session_state:
         st.session_state.pos = nx.spring_layout(G)
-        
-    pos = st.session_state.pos
-    nx.draw_networkx_nodes(G, pos, node_size=500)
-    nx.draw_networkx_edges(G, pos, width=1, arrows=False)
-    nx.draw_networkx_edge_labels(
-        G, pos, edge_labels=nx.get_edge_attributes(G, 'bw'))
-    nx.draw_networkx_labels(G, pos, font_size=10, font_family="sans-serif")
-    
-        
-    with st.sidebar:
-        st.write("Graph Options:")
-        if st.checkbox("Show Flows", False):
-            df_flows.columns = df_flows.columns.str.lower()
-            G2 = nx.from_pandas_edgelist(df_flows, edge_attr=True)
-            nx.draw_networkx_edges(G2, pos, width=3, edge_color='r', alpha=0.3)
 
-        if st.checkbox("Show Routes", False):
+    pos = st.session_state.pos
+    nx.draw_networkx_nodes(G, pos, node_color="#CFCFCF", edgecolors="#AAAAAA", node_size=500)
+    nx.draw_networkx_edges(G, pos, width=1, edge_color="#AAAAAA", arrows=False)
+
+    checks = st.columns(3)
+
+    with checks[0]:
+        if st.checkbox("Link Bandwith", False):
+            nx.draw_networkx_edge_labels(
+                G, pos, edge_labels=nx.get_edge_attributes(G, 'bw'))
+
+    nx.draw_networkx_labels(G, pos, font_size=10, font_family="sans-serif")
+
+    with checks[1]:
+        if st.checkbox("Flows", False):
+            df_flows.columns = df_flows.columns.str.lower()
+            # Transform a column to a numerical value for colors
+            df_flows['source']=pd.Categorical(df_flows['source'])
+            G2 = nx.from_pandas_edgelist(df_flows, edge_attr=True)
+            # nx.draw_networkx_edges(
+            #     G2, pos, width=3, edge_color=df_flows['source'].cat.codes, 
+            #     edge_cmap=plt.cm.Reds, edge_vmin=0.3, edge_vmax=0.7)
+            nx.draw_networkx_edges(G2, pos, width=3, edge_color='r', alpha=0.6)
+            nx.draw_networkx_edge_labels(
+                G2, pos, edge_labels=nx.get_edge_attributes(G2, 'flow'))
+
+    with checks[2]:
+        if st.checkbox("Routes", False):
             df_flows.columns = df_flows.columns.str.lower()
             G2 = nx.from_pandas_edgelist(df_flows, edge_attr=True)
             for s, t in G2.edges:
                 path = nx.shortest_path(G, source=s, target=t)
                 path_edges = list(zip(path, path[1:]))
-                nx.draw_networkx_nodes(G, pos, nodelist=[s, t], node_color='g', alpha=0.3)
-                nx.draw_networkx_edges(G, pos, edgelist=path_edges, arrows=False, edge_color='g', width = 5, alpha=0.3)
+                nx.draw_networkx_nodes(
+                    G, pos, nodelist=[s, t], node_color='#1f78b4', node_size=500, alpha=0.6)
+                nx.draw_networkx_edges(
+                    G, pos, edgelist=path_edges, arrows=False, edge_color='#1f78b4', width=3, alpha=0.6)
 
     st.pyplot(fig)
 
