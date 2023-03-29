@@ -183,13 +183,13 @@ if uploaded_file is not None:
     checks = st.columns(3)
     with checks[0]:
         # If selected draw bandwidth labels
-        if not df.empty and st.checkbox("Link Bandwith", False):
+        if not df_flows.empty and st.checkbox("Link Bandwith", False):
             nx.draw_networkx_edge_labels(
                 G, pos, edge_labels=nx.get_edge_attributes(G, 'bw'))
 
     with checks[1]:
         # If selected draw flows
-        if not df.empty and st.checkbox("Flows", False):
+        if not df_flows.empty and st.checkbox("Flows", False):
             df_flows.columns = df_flows.columns.str.lower()
 
             # Select filter type and value
@@ -213,7 +213,7 @@ if uploaded_file is not None:
         # If selected draw all routes used by traffic flows
         # if the df_flows are filterd from above, the routes shown are belong 
         # to selected flows.
-        if not df.empty and st.checkbox("Routes", False):
+        if not df_flows.empty and st.checkbox("Routes", False):
             df_flows.columns = df_flows.columns.str.lower()
             G2 = nx.from_pandas_edgelist(df_flows, edge_attr=True)
             for s, t in G2.edges:
