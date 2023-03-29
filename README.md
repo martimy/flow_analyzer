@@ -1,6 +1,6 @@
 # Flow Analyzer
 
-This is a Python app built with Streamlit that analyzes traffic flow in a network.
+This app analyzes traffic flows in the network and displays the results in a graphical format.
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://martimy-flow-analyzer-st-flow-0p35h8.streamlit.app/)
 
@@ -42,24 +42,59 @@ The App takes in the form of traffic requirements between an pair of nodes in th
 
 The app generates the following output:
 
-### Edge information
 
-The app displays information about the capacity and traffic flow on each edge in the network in a table. The table includes the following columns:
 
-Src: The source node of the edge.
-Dst: The destination node of the edge.
-Tx: The amount of traffic transmitted on the edge.
-Rx: The amount of traffic received on the edge.
+## How to Use
 
-### Node information
+To use the Flow Analyzer app, follow these steps:
+
+1. Run the app from the command line (Alternatively run it from streamlit). The app will open in your default web browser.
+
+    ```bash
+    $ streamlit run app.py
+    ```
+
+2. Upload the network topology in DOT format by clicking on the "Upload Network" button. If you don't have a network topology, you can use the demo network by clicking on the "Use demo network" checkbox.
+
+3. Upload the traffic flow information in CSV format by clicking on the "Upload Flow Information" button or edit the traffic flows using the editable dataframe.
+
+
+
+## Input
+
+The input to the Flow Analyzer app includes the following:
+
+- Network topology: The network topology must be in DOT format. The app allows the user to upload a network topology in DOT format or use the demo network.
+
+- Traffic flow information: The traffic flow information must be in CSV format. The app also allows the user to create or edit traffic flow information.
+
+## Output
+
+The output of the app includes the following:
+
+### Link Traffic
+
+The app displays information about the capacity and traffic flow on each link in the network in a table. The table includes the following columns:
+
+- Source: The source node of the edge.
+- Target: The destination node of the edge.
+- Tx: The amount of traffic originated from the source node.
+
+Only links with non-zero traffic are listed.
+
+### Node Traffic
 
 The app displays information about the traffic flow at each node in the network in a table. The table includes the following columns:
 
-Node: The name of the node.
-Tx: The amount of traffic transmitted by the node.
-Rx: The amount of traffic received by the node.
+- Node: The name of the node.
+- Outbound: The amount of traffic transmitted by the node.
+- Inbound: The amount of traffic received by the node.
 
+Only nodes with non-zero traffic are listed.
 
 ### Graph visualization
 
-The app also displays a visualization of the network using Matplotlib. The nodes are positioned using the spring layout algorithm, and the edges are drawn as arrows with labels indicating the amount of traffic flow.
+The app also displays a visualization of the network topology. Traffic flows and selected routes in the network are displayed.
+
+
+**Thank you for using the Flow Analyzer app!**

@@ -151,7 +151,7 @@ if uploaded_file is not None:
     edge_data = [[x, y, G[x][y]['tx']] for x, y in G.edges]
     df_edge = pd.DataFrame(edge_data, columns=("Source", "Target", "Tx"))
 
-    st.subheader("Edge Traffic")
+    st.subheader("Link Traffic")
     st.table(df_edge[(df_edge['Tx'] > 0)])
 
     # Display the node attributes
