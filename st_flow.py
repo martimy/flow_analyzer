@@ -10,6 +10,7 @@ import networkx as nx
 import pydot
 import matplotlib.pyplot as plt
 import pandas as pd
+from io import StringIO
 
 # Inject CSS with Markdown to hide the index column in pandas frames
 hide_table_row_index = """
@@ -22,16 +23,26 @@ st.markdown(hide_table_row_index, unsafe_allow_html=True)
 
 
 TITLE = "Flow Analyzer"
-ABOUT = "This app analyzes traffic flow in a network."
-UPLOAD_HELP = "Upload a network topology in DOT format."
+ABOUT = "This app analyzes traffic flows in the network and displays the \
+    results in tabular and graphical format."
+UPLOAD_TOPO_HELP = "Upload a network topology in DOT format."
 UPLOAD_FLOW_HELP = "Upload traffic flow information in csv format."
 UPLOAD_FILE = "Upload a file or use demo network."
-EXAMPE_NETWORK = "graph {1 -- 2;2 -- 3;3 -- 4;4 -- 1;A -- 1;B -- 2;C -- 3;D -- 4;}"
 EDIT_FLOWS = r"""Edit the table below to enter traffic information.
 To delete a row, select it from the left side then hit DEL. Use CTRL to select multiple rows.
 """
 
-    
+DEMO_TOPOLOGY = "graph {1 -- 2;2 -- 3;3 -- 4;4 -- 1;A -- 1;B -- 2;C -- 3;D -- 4;}"
+DEMO_FLOWS = """Source,Target,Flow
+A,B,1
+C,D,2
+"""
+
+def remove_session_keys():
+    # Remove all keys
+    for key in st.session_state.keys():
+        del st.session_state[key]
+
 def add_capacity(G, s, d, b):
     """Adds amount of traffic to edges and nodes along the shortest path"""
 
@@ -61,18 +72,20 @@ def add_capacity(G, s, d, b):
 
 # The following will appear in a sidebar
 with st.sidebar:
-    uploaded_file = st.file_uploader(
-        "Upload Network", type="dot", help=UPLOAD_HELP)
-
+   
     # The checkbox is enabled when no file is uploaded
-    show_ex = uploaded_file is not None
-    use_demo_network = st.checkbox(
-        'Use demo network', value=False, disabled=show_ex)
-    if use_demo_network:
-        uploaded_file = EXAMPE_NETWORK
+    # show_ex = topo_file is not None
+    if st.checkbox('Use demo network', False):
+        topo_file = DEMO_TOPOLOGY
+        flow_file = StringIO(DEMO_FLOWS)
+        if 'pos' in st.session_state:
+            del st.session_state["pos"]
+    else:
+        topo_file = st.file_uploader(
+            "Upload Network", type="dot", help=UPLOAD_TOPO_HELP)
+        flow_file = st.file_uploader(
+            "Upload Flow Information", type="csv", help=UPLOAD_FLOW_HELP)
 
-    flow_file = st.file_uploader(
-        "Upload Flow Information", type="csv", help=UPLOAD_FLOW_HELP)
 
 
 # This will be the main page
@@ -81,12 +94,12 @@ st.markdown(ABOUT)
 
 
 # Display an erroe message if there is no input topology or
-if uploaded_file is not None:
+if topo_file is not None:
     # Read the graph string from the file
-    if isinstance(uploaded_file, str):
-        graph_str = uploaded_file
+    if isinstance(topo_file, str):
+        graph_str = topo_file
     else:
-        graph_str = uploaded_file.read().decode("utf-8")
+        graph_str = topo_file.read().decode("utf-8")
 
     # Parse the DOT format to create a Pydot graph object
     graph = pydot.graph_from_dot_data(graph_str)[0]
@@ -112,7 +125,7 @@ if uploaded_file is not None:
         G.nodes[dest_node]['ttx'] = 0
         G.nodes[dest_node]['trx'] = 0
 
-    st.header("Input")
+    st.header("Traffic Flows")
     # Allow user to edit dataframe
     st.markdown(EDIT_FLOWS)
 
@@ -146,23 +159,23 @@ if uploaded_file is not None:
         except:
             st.error(f"Input error in line {index}")
 
-    st.header("Output")
+
+    st.header("Link Traffic")
     # Display the edge capacities
     edge_data = [[x, y, G[x][y]['tx']] for x, y in G.edges]
     df_edge = pd.DataFrame(edge_data, columns=("Source", "Target", "Tx"))
 
-    st.subheader("Link Traffic")
     st.table(df_edge[(df_edge['Tx'] > 0)])
 
+    st.header("Node Traffic")
     # Display the node attributes
     node_data = [[n, G.nodes[n]['ttx'], G.nodes[n]['trx']] for n in G.nodes]
     df_node = pd.DataFrame(node_data, columns=("Node", "Outbound", "Inbound"))
 
-    st.subheader("Node Traffic")
     st.table(df_node[(df_node['Outbound'] > 0) | (df_node['Inbound'] > 0)])
 
     # Plotting the network graph
-    st.subheader("Network Topology")
+    st.header("Network Topology")
     fig, _ = plt.subplots()
     # fig = plt.figure()
 
@@ -211,7 +224,7 @@ if uploaded_file is not None:
 
     with checks[2]:
         # If selected draw all routes used by traffic flows
-        # if the df_flows are filterd from above, the routes shown are belong 
+        # if the df_flows are filterd from above, the routes shown are belong
         # to selected flows.
         if not df_flows.empty and st.checkbox("Routes", False):
             df_flows.columns = df_flows.columns.str.lower()
@@ -225,15 +238,12 @@ if uploaded_file is not None:
                     G, pos, nodelist=[s, t], node_color='#1f78b4', node_size=500, alpha=0.6).zorder = 2.5
 
     st.pyplot(fig)
-    
-    if st.button('Redraw'): 
+
+    if st.button('Redraw'):
         # Needed to re-draw graph
         if 'pos' in st.session_state:
             del st.session_state["pos"]
             st.experimental_rerun()
 else:
-    # Remove all keys
-    for key in st.session_state.keys():
-        del st.session_state[key]
-
-    st.error(UPLOAD_FILE)
+    remove_session_keys()
+    st.warning(UPLOAD_FILE)

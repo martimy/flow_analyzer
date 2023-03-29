@@ -1,6 +1,6 @@
 # Flow Analyzer
 
-This app analyzes traffic flows in the network and displays the results in a graphical format.
+This app analyzes traffic flows in the network and displays the results in tabular and graphical format.
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://martimy-flow-analyzer-st-flow-0p35h8.streamlit.app/)
 
