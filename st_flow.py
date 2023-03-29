@@ -111,8 +111,7 @@ if topo_file is not None:
     # and set the edge attributes and node attributes
     for node in graph.get_nodes():
         # Add node and create its tx and rx attributes
-        if node != "\r\n": # bug workaround
-            G.add_node(node.get_name(), ttx=0, trx=0)
+        G.add_node(node.get_name(), ttx=0, trx=0)
 
     for edge in graph.get_edges():
         source_node = edge.get_source()
