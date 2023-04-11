@@ -106,13 +106,13 @@ if topo_file is not None:
 
     # Create an empty NetworkX graph
     G = nx.DiGraph()
-
+    
     # Add nodes and edges to the NetworkX graph based on the Pydot graph object,
     # and set the edge attributes and node attributes
     for node in graph.get_nodes():
         # Add node and create its tx and rx attributes
         G.add_node(node.get_name(), ttx=0, trx=0)
-
+    
     for edge in graph.get_edges():
         source_node = edge.get_source()
         dest_node = edge.get_destination()
@@ -125,6 +125,28 @@ if topo_file is not None:
         G.nodes[dest_node]['ttx'] = 0
         G.nodes[dest_node]['trx'] = 0
 
+    if st.checkbox("Switching", False):
+        root_node = st.selectbox(
+            'Select Root', G.nodes)
+        GS = nx.Graph()
+        for edge in graph.get_edges():
+            source_node = edge.get_source()
+            dest_node = edge.get_destination()
+            GS.add_edge(source_node, dest_node)
+            
+        # Compute the minimum spanning tree using the STP algorithm
+        # after relabeling the nodes so the root node has label 1
+        H = nx.relabel_nodes(GS, {root_node: 1, 1: root_node})
+        T = nx.minimum_spanning_tree(H)
+        # # Print the edges and their weights in the minimum spanning tree
+        # st.write([edge for edge in T.edges(data=True)])
+        fig1, _ = plt.subplots()
+        pos1 = nx.spring_layout(T)
+        nx.draw_networkx_edges(T, pos1)   
+        nx.draw_networkx_nodes(T, pos1)
+        nx.draw_networkx_labels(T, pos1)
+        st.pyplot(fig1)
+    
     st.header("Traffic Flows")
     # Allow user to edit dataframe
     st.markdown(EDIT_FLOWS)
