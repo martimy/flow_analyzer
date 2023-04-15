@@ -47,11 +47,6 @@ A,B,1
 C,D,2
 """
 
-<<<<<<< HEAD
-EDGE_COLOR = "#AAAAAA"
-NODE_COLOR = "#CFCFCF"
-ROUTE_COLOR = "#1f78b4"
-=======
 # define a mapping between the 'speed' attribute and the 'weight' attribute
 speed_to_weight = {"10": 100, "100": 19, "1000": 4, "10000": 2}
 
@@ -60,7 +55,6 @@ EDGE_COLOR = "#AAAAAA"
 NODE_COLOR = "#CFCFCF"
 ROUTE_COLOR = "#1f78b4"
 ROOT_COLOR = "#555555"
->>>>>>> switching
 
 def remove_session_keys():
     # Remove all keys
@@ -95,55 +89,11 @@ def add_capacity(G, s, d, b):
             G.nodes[n]['tx'] += b
 
 
-<<<<<<< HEAD
-def create_graph(graph_str):
-    # Parse the DOT format to create a Pydot graph object
-    graph = pydot.graph_from_dot_data(graph_str)[0]
-
-    # Create an empty NetworkX graph
-    G = nx.Graph()
-
-    # Add nodes and edges to the NetworkX graph based on the Pydot graph object,
-    # and set the edge attributes and node attributes
-    for edge in graph.get_edges():
-        src_node = edge.get_source()
-        tgt_node = edge.get_destination()
-        G.add_edge(src_node, tgt_node,
-                   dr=f"{src_node},{tgt_node}", fw=0, bk=0, bw=0)
-
-    for node in G.nodes:
-        G.nodes[node]['tx'] = 0
-        G.nodes[node]['rx'] = 0
-
-    return G
-
-
-=======
->>>>>>> switching
 def create_flows():
     df = pd.DataFrame({'Source': [], 'Target': [], 'Flow': []})
     convert_dict = {'Source': str, 'Target': str}
     return df.astype(convert_dict)
 
-<<<<<<< HEAD
-
-# The following will appear in a sidebar
-with st.sidebar:
-
-    # The checkbox is enabled when no file is uploaded
-    # show_ex = topo_file is not None
-    if st.checkbox('Use demo network', False):
-        topo_file = DEMO_TOPOLOGY
-        flow_file = StringIO(DEMO_FLOWS)
-        if 'pos' in st.session_state:
-            del st.session_state["pos"]
-    else:
-        topo_file = st.file_uploader(
-            "Upload Network", type="dot", help=UPLOAD_TOPO_HELP)
-        flow_file = st.file_uploader(
-            "Upload Flow Information", type="csv", help=UPLOAD_FLOW_HELP)
-
-=======
 def assign_stp_attributes(ORG):
     # Read the node's ID or create one based on its label
     for node in ORG.nodes:
@@ -191,7 +141,7 @@ with st.sidebar:
         "Upload Network", type="dot", help=UPLOAD_TOPO_HELP)
     flow_file = st.file_uploader(
         "Upload Flow Information", type="csv", help=UPLOAD_FLOW_HELP)
->>>>>>> switching
+
 
 # This will be the main page
 st.title(TITLE)
@@ -211,16 +161,10 @@ if topo_file is not None:
         assign_stp_attributes(ORG)
         G = get_stp(ORG)
     else:
-<<<<<<< HEAD
-        graph_str = topo_file.read().decode("utf-8")
-
-    G = create_graph(graph_str)
-=======
         G = ORG
     
     # Assign remaining attributes
     assign_flow_attributes(G)
->>>>>>> switching
 
     st.header("Traffic Flows")
     # Allow user to edit dataframe
@@ -248,11 +192,7 @@ if topo_file is not None:
             if (source in G.nodes) and (target in G.nodes) and (flow > 0):
                 add_capacity(G, row['Source'], row['Target'], row['Flow'])
             else:
-<<<<<<< HEAD
-                st.error(f"Unknown node or invalid flow at {index}.")
-=======
                 st.error(f"Unknown node or invalid flow at line {index}.")
->>>>>>> switching
                 continue
         except Exception as e:
             st.error(e)
@@ -289,11 +229,6 @@ if topo_file is not None:
     pos = st.session_state.pos
     line_style = 'dotted' if switching else 'solid'
     nx.draw_networkx_edges(
-<<<<<<< HEAD
-        G, pos, width=1, edge_color=EDGE_COLOR, arrows=False).zorder = 0
-    nx.draw_networkx_nodes(G, pos, node_color=NODE_COLOR,
-                           edgecolors=EDGE_COLOR, node_size=500).zorder = 2
-=======
         ORG, pos, width=1, edge_color=EDGE_COLOR, style=line_style).zorder = 0
     # Draw the STP over the NetworkX graph G
     if switching:
@@ -304,7 +239,6 @@ if topo_file is not None:
     nx.draw_networkx_nodes(G, pos, node_color=NODE_COLOR,
                            edgecolors=EDGE_COLOR, node_size=500).zorder = 2
     
->>>>>>> switching
     # labels have have a zorder pf >3
     nx.draw_networkx_labels(G, pos, font_size=10, font_family="sans-serif")
 
