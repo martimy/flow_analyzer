@@ -1,8 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Mar  4 11:27:12 2023
+Copyright 2023 Maen Artimy
 
-@author: artim
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 """
 
 import streamlit as st
@@ -56,6 +66,7 @@ NODE_COLOR = "#CFCFCF"
 ROUTE_COLOR = "#1f78b4"
 ROOT_COLOR = "#555555"
 
+
 def remove_session_keys():
     # Remove all keys
     for key in st.session_state.keys():
@@ -94,6 +105,7 @@ def create_flows():
     convert_dict = {'Source': str, 'Target': str}
     return df.astype(convert_dict)
 
+
 def assign_stp_attributes(ORG):
     # Read the node's ID or create one based on its label
     for node in ORG.nodes:
@@ -108,7 +120,8 @@ def assign_stp_attributes(ORG):
         # map the 'speed' attribute to a 'weight' attribute using the speed_to_weight dictionary
         edge_weight = speed_to_weight[edge_speed]
         ORG.edges[edge]['weight'] = edge_weight
-            
+
+
 def assign_flow_attributes(G):
     # Set node and edge attributes
     for s, t in G.edges:
@@ -116,13 +129,14 @@ def assign_flow_attributes(G):
         G.edges[s, t]["fw"] = 0
         G.edges[s, t]["bk"] = 0
         G.edges[s, t]["bw"] = 0
-        
+
     for node in G.nodes:
         G.nodes[node]["tx"] = 0
         G.nodes[node]["rx"] = 0
 
 
 graph_layouts = ['Spring', 'Circular', 'Kamada-Kawai', 'Planar']
+
 
 def get_graph_layout(G, layout):
     if layout == 'Circular':
@@ -135,34 +149,104 @@ def get_graph_layout(G, layout):
         pos = nx.spring_layout(G)
     return pos
 
-# The following will appear in a sidebar
-with st.sidebar:
-    topo_file = st.file_uploader(
-        "Upload Network", type="dot", help=UPLOAD_TOPO_HELP)
-    flow_file = st.file_uploader(
-        "Upload Flow Information", type="csv", help=UPLOAD_FLOW_HELP)
+
+def plot_graphs(ORG, G, df_flows, switching):
+    st.header("Network Topology")
+    fig, _ = plt.subplots()
+    # fig = plt.figure()
+
+    layout = st.sidebar.selectbox('Select Graph Layout', graph_layouts)
+
+    # Get positions for all nodes and save in a session state
+    if 'pos' not in st.session_state:
+        st.session_state.pos = get_graph_layout(ORG, layout)
+        # st.session_state.pos = nx.spring_layout(ORG)
+
+    # Plot a plain graph
+    pos = st.session_state.pos
+    line_style = 'dotted' if switching else 'solid'
+    nx.draw_networkx_edges(
+        ORG, pos, width=1, edge_color=EDGE_COLOR, style=line_style).zorder = 0
+    # Draw the STP over the NetworkX graph G
+    if switching:
+        nx.draw_networkx_edges(G, pos=pos, edgelist=G.edges(),
+                               edge_color=EDGE_COLOR).zorder = 0.1
+        nx.draw_networkx_nodes(G, pos, nodelist=[
+                               G.graph["root"]], node_color=None, edgecolors=ROOT_COLOR, node_size=600).zorder = 2
+
+    nx.draw_networkx_nodes(G, pos, node_color=NODE_COLOR,
+                           edgecolors=EDGE_COLOR, node_size=500).zorder = 2
+
+    # labels have have a zorder pf >3
+    nx.draw_networkx_labels(G, pos, font_size=10, font_family="sans-serif")
+
+    # Disoplay filtering options in three columns
+    checks = st.columns(3)
+    with checks[0]:
+        # If selected draw bandwidth labels
+        if not df_flows.empty and st.checkbox("Link Bandwith", False):
+            nx.draw_networkx_edge_labels(
+                G, pos, edge_labels=nx.get_edge_attributes(G, 'bw'))
+
+    with checks[1]:
+        # If selected draw flows
+        if not df_flows.empty and st.checkbox("Flows", False):
+            df_flows.columns = df_flows.columns.str.lower()
+
+            # Select filter type and value
+            filter_type = st.sidebar.selectbox(
+                'Filter by', ['none', 'source', 'target'])
+            if filter_type != 'none':
+                # Filter dataframe based on user selection
+                filter_values = df_flows[filter_type].unique()
+                # Select filter value from dropdown list
+                filter_value = st.sidebar.selectbox('Value', filter_values)
+                # Filter dataframe based on user selection
+                df_flows = df_flows.loc[df_flows[filter_type] == filter_value]
+
+            G2 = nx.from_pandas_edgelist(
+                df_flows, edge_attr=True, create_using=nx.DiGraph)
+            nx.draw_networkx_edges(
+                G2, pos, width=2, edge_color='r', alpha=0.6)  # .zorder = 1
+            nx.draw_networkx_edge_labels(
+                G2, pos, edge_labels=nx.get_edge_attributes(G2, 'flow'))
+
+    with checks[2]:
+        # If selected draw all routes used by traffic flows
+        # if the df_flows are filterd from above, the routes shown are belong
+        # to selected flows.
+        if not df_flows.empty and st.checkbox("Routes", False):
+            df_flows.columns = df_flows.columns.str.lower()
+            G2 = nx.from_pandas_edgelist(df_flows, edge_attr=True)
+            for s, t in G2.edges:
+                path = nx.shortest_path(G, source=s, target=t)
+                path_edges = list(zip(path, path[1:]))
+                nx.draw_networkx_edges(
+                    G, pos, edgelist=path_edges, arrows=False,
+                    edge_color=ROUTE_COLOR, width=3, alpha=0.6).zorder = 0.5
+                nx.draw_networkx_nodes(
+                    G, pos, nodelist=[s, t], node_color=ROUTE_COLOR,
+                    node_size=500, alpha=0.6).zorder = 2.5
+
+    st.pyplot(fig)
 
 
-# This will be the main page
-st.title(TITLE)
-st.markdown(ABOUT)
-
-# Display an erroe message if there is no input topology or
-if topo_file is not None:
+def analyze_flows(topo_file, flow_file):
     # Load the graph from a DOT file
     # Read the uploaded file using nx_pydot.read_dot()
     dot_data = topo_file.read().decode("utf-8").replace('\r\n', '\n')
 
     # Convert the Pydot graph to a NetworkX graph
     ORG = nx.Graph(nx.drawing.nx_pydot.read_dot(StringIO(dot_data)))
-  
-    switching = st.sidebar.checkbox("Apply Spanning Tree", False, help=STP_HELP)
+
+    switching = st.sidebar.checkbox(
+        "Apply Spanning Tree", False, help=STP_HELP)
     if switching:
         assign_stp_attributes(ORG)
         G = get_stp(ORG)
     else:
         G = ORG
-    
+
     # Assign remaining attributes
     assign_flow_attributes(G)
 
@@ -204,7 +288,7 @@ if topo_file is not None:
     df_edge = pd.DataFrame(edge_data, columns=("Source", "Target", "FW", "BK"))
     df_edge_selected = df_edge[(df_edge['FW'] > 0) | (df_edge['BK'] > 0)]
     st.dataframe(df_edge_selected, use_container_width=True)
-    
+
     st.header("Node Traffic")
     # Display the node attributes
     node_data = [[n, G.nodes[n]['tx'], G.nodes[n]['rx']] for n in G.nodes]
@@ -214,85 +298,34 @@ if topo_file is not None:
         df_node['Inbound'] > 0)], use_container_width=True)
 
     # Plotting the network graph
-    st.header("Network Topology")
-    fig, _ = plt.subplots()
-    # fig = plt.figure()
-
-    layout = st.sidebar.selectbox('Select Graph Layout', graph_layouts)
-
-    # Get positions for all nodes and save in a session state
-    if 'pos' not in st.session_state:
-        st.session_state.pos = get_graph_layout(ORG, layout)
-        # st.session_state.pos = nx.spring_layout(ORG)
-
-    # Plot a plain graph
-    pos = st.session_state.pos
-    line_style = 'dotted' if switching else 'solid'
-    nx.draw_networkx_edges(
-        ORG, pos, width=1, edge_color=EDGE_COLOR, style=line_style).zorder = 0
-    # Draw the STP over the NetworkX graph G
-    if switching:
-        nx.draw_networkx_edges(G, pos=pos, edgelist=G.edges(),
-                               edge_color=EDGE_COLOR).zorder = 0.1
-        nx.draw_networkx_nodes(G, pos, nodelist=[G.graph["root"]], node_color=None, edgecolors=ROOT_COLOR, node_size=600).zorder = 2
-
-    nx.draw_networkx_nodes(G, pos, node_color=NODE_COLOR,
-                           edgecolors=EDGE_COLOR, node_size=500).zorder = 2
-    
-    # labels have have a zorder pf >3
-    nx.draw_networkx_labels(G, pos, font_size=10, font_family="sans-serif")
-
-    # Disoplay filtering options in three columns
-    checks = st.columns(3)
-    with checks[0]:
-        # If selected draw bandwidth labels
-        if not df_flows.empty and st.checkbox("Link Bandwith", False):
-            nx.draw_networkx_edge_labels(
-                G, pos, edge_labels=nx.get_edge_attributes(G, 'bw'))
-
-    with checks[1]:
-        # If selected draw flows
-        if not df_flows.empty and st.checkbox("Flows", False):
-            df_flows.columns = df_flows.columns.str.lower()
-
-            # Select filter type and value
-            filter_type = st.sidebar.selectbox(
-                'Filter by', ['none', 'source', 'target'])
-            if filter_type != 'none':
-                # Filter dataframe based on user selection
-                filter_values = df_flows[filter_type].unique()
-                # Select filter value from dropdown list
-                filter_value = st.sidebar.selectbox('Value', filter_values)
-                # Filter dataframe based on user selection
-                df_flows = df_flows.loc[df_flows[filter_type] == filter_value]
-
-            G2 = nx.from_pandas_edgelist(df_flows, edge_attr=True, create_using=nx.DiGraph)
-            nx.draw_networkx_edges(G2, pos, width=2, edge_color='r', alpha=0.6) #.zorder = 1
-            nx.draw_networkx_edge_labels(
-                G2, pos, edge_labels=nx.get_edge_attributes(G2, 'flow'))
-
-    with checks[2]:
-        # If selected draw all routes used by traffic flows
-        # if the df_flows are filterd from above, the routes shown are belong
-        # to selected flows.
-        if not df_flows.empty and st.checkbox("Routes", False):
-            df_flows.columns = df_flows.columns.str.lower()
-            G2 = nx.from_pandas_edgelist(df_flows, edge_attr=True)
-            for s, t in G2.edges:
-                path = nx.shortest_path(G, source=s, target=t)
-                path_edges = list(zip(path, path[1:]))
-                nx.draw_networkx_edges(
-                    G, pos, edgelist=path_edges, arrows=False, edge_color=ROUTE_COLOR, width=3, alpha=0.6).zorder = 0.5
-                nx.draw_networkx_nodes(
-                    G, pos, nodelist=[s, t], node_color=ROUTE_COLOR, node_size=500, alpha=0.6).zorder = 2.5
-
-    st.pyplot(fig)
+    plot_graphs(ORG, G, df_flows, switching)
 
     if st.button('Redraw'):
         # Needed to re-draw graph
         if 'pos' in st.session_state:
             del st.session_state["pos"]
             st.experimental_rerun()
-else:
-    remove_session_keys()
-    st.warning(UPLOAD_FILE)
+
+
+def app():
+    # The following will appear in a sidebar
+    with st.sidebar:
+        topo_file = st.file_uploader(
+            "Upload Network", type="dot", help=UPLOAD_TOPO_HELP)
+        flow_file = st.file_uploader(
+            "Upload Flow Information", type="csv", help=UPLOAD_FLOW_HELP)
+
+    # This will be the main page
+    st.title(TITLE)
+    st.markdown(ABOUT)
+
+    # Display an error message if there is no input topology or
+    if topo_file is not None:
+        analyze_flows(topo_file, flow_file)
+    else:
+        remove_session_keys()
+        st.warning(UPLOAD_FILE)
+
+
+if __name__ == "__main__":
+    app()
