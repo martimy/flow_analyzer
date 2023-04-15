@@ -12,14 +12,22 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from io import StringIO
 
-# Inject CSS with Markdown to hide the index column in pandas frames
+# Inject CSS with Markdown to hide the index column in tables and dataframes
 hide_table_row_index = """
             <style>
             thead tr th:first-child {display:none}
             tbody th {display:none}
             </style>
             """
+hide_dataframe_row_index = """
+            <style>
+            .row_heading.level0 {display:none}
+            .blank {display:none}
+            </style>
+            """
+# Inject CSS with Markdown
 st.markdown(hide_table_row_index, unsafe_allow_html=True)
+st.markdown(hide_dataframe_row_index, unsafe_allow_html=True)
 
 
 TITLE = "Flow Analyzer"
@@ -38,10 +46,15 @@ A,B,1
 C,D,2
 """
 
+EDGE_COLOR = "#AAAAAA"
+NODE_COLOR = "#CFCFCF"
+ROUTE_COLOR = "#1f78b4"
+
 def remove_session_keys():
     # Remove all keys
     for key in st.session_state.keys():
         del st.session_state[key]
+
 
 def add_capacity(G, s, d, b):
     """Adds amount of traffic to edges and nodes along the shortest path"""
@@ -51,28 +64,56 @@ def add_capacity(G, s, d, b):
 
     # Add traffic to edges in both directions
     for x, y in edges:
-        G[x][y]['tx'] += b
-        # G[y][x]['rx'] += b
-
-        G[x][y]['bw'] = max(G[x][y]['tx'], G[y][x]['tx'])
-        G[y][x]['bw'] = G[x][y]['bw']
+        if G[x][y]['dr'] == f"{x},{y}":
+            G[x][y]['fw'] += b
+        else:
+            G[x][y]['bk'] += b
+        G[x][y]['bw'] = max(G[x][y]['fw'], G[x][y]['bk'])
 
     # Add traffic to source and traget nodes
     # The source transmits only and target receives only
-    G.nodes[d]['trx'] += b
-    G.nodes[s]['ttx'] += b
+    G.nodes[d]['rx'] += b
+    G.nodes[s]['tx'] += b
 
     # All other intermediate nodes receive then transmit the same
     # amount of traffic
     if len(nodes_list) > 2:
         for n in nodes_list[1:-1]:
-            G.nodes[n]['trx'] += b
-            G.nodes[n]['ttx'] += b
+            G.nodes[n]['rx'] += b
+            G.nodes[n]['tx'] += b
+
+
+def create_graph(graph_str):
+    # Parse the DOT format to create a Pydot graph object
+    graph = pydot.graph_from_dot_data(graph_str)[0]
+
+    # Create an empty NetworkX graph
+    G = nx.Graph()
+
+    # Add nodes and edges to the NetworkX graph based on the Pydot graph object,
+    # and set the edge attributes and node attributes
+    for edge in graph.get_edges():
+        src_node = edge.get_source()
+        tgt_node = edge.get_destination()
+        G.add_edge(src_node, tgt_node,
+                   dr=f"{src_node},{tgt_node}", fw=0, bk=0, bw=0)
+
+    for node in G.nodes:
+        G.nodes[node]['tx'] = 0
+        G.nodes[node]['rx'] = 0
+
+    return G
+
+
+def create_flows():
+    df = pd.DataFrame({'Source': [], 'Target': [], 'Flow': []})
+    convert_dict = {'Source': str, 'Target': str}
+    return df.astype(convert_dict)
 
 
 # The following will appear in a sidebar
 with st.sidebar:
-   
+
     # The checkbox is enabled when no file is uploaded
     # show_ex = topo_file is not None
     if st.checkbox('Use demo network', False):
@@ -87,11 +128,9 @@ with st.sidebar:
             "Upload Flow Information", type="csv", help=UPLOAD_FLOW_HELP)
 
 
-
 # This will be the main page
 st.title(TITLE)
 st.markdown(ABOUT)
-
 
 # Display an erroe message if there is no input topology or
 if topo_file is not None:
@@ -101,29 +140,7 @@ if topo_file is not None:
     else:
         graph_str = topo_file.read().decode("utf-8")
 
-    # Parse the DOT format to create a Pydot graph object
-    graph = pydot.graph_from_dot_data(graph_str)[0]
-
-    # Create an empty NetworkX graph
-    G = nx.DiGraph()
-
-    # Add nodes and edges to the NetworkX graph based on the Pydot graph object,
-    # and set the edge attributes and node attributes
-    for node in graph.get_nodes():
-        # Add node and create its tx and rx attributes
-        G.add_node(node.get_name(), ttx=0, trx=0)
-
-    for edge in graph.get_edges():
-        source_node = edge.get_source()
-        dest_node = edge.get_destination()
-        # Set bi-directional edges and their attributes
-        G.add_edge(source_node, dest_node, tx=0, bw=0)
-        G.add_edge(dest_node, source_node, tx=0, bw=0)
-        # Initialize the node's total tx and rx traffic to 0
-        G.nodes[source_node]['ttx'] = 0
-        G.nodes[source_node]['trx'] = 0
-        G.nodes[dest_node]['ttx'] = 0
-        G.nodes[dest_node]['trx'] = 0
+    G = create_graph(graph_str)
 
     st.header("Traffic Flows")
     # Allow user to edit dataframe
@@ -132,10 +149,7 @@ if topo_file is not None:
     # Creat a editable dataframe representing traffic flows by
     # reading a csv file or start with an empty frame
     if flow_file is None:
-        # Make sure that all node names are of type string
-        df = pd.DataFrame({'Source': [], 'Target': [], 'Flow': []})
-        convert_dict = {'Source': str, 'Target': str}
-        df = df.astype(convert_dict)
+        df = create_flows()
     else:
         df = pd.read_csv(flow_file)
 
@@ -154,25 +168,26 @@ if topo_file is not None:
             if (source in G.nodes) and (target in G.nodes) and (flow > 0):
                 add_capacity(G, row['Source'], row['Target'], row['Flow'])
             else:
-                st.error(f"Input error in line {index}.")
+                st.error(f"Unknown node or invalid flow at {index}.")
                 continue
-        except:
-            st.error(f"Input error in line {index}")
-
+        except Exception as e:
+            st.error(e)
 
     st.header("Link Traffic")
-    # Display the edge capacities
-    edge_data = [[x, y, G[x][y]['tx']] for x, y in G.edges]
-    df_edge = pd.DataFrame(edge_data, columns=("Source", "Target", "Tx"))
-
-    st.table(df_edge[(df_edge['Tx'] > 0)])
-
+    # Display the edge flows
+    edge_data = [G[x][y]['dr'].split(
+        ",") + [G[x][y]['fw'], G[x][y]['bk']] for x, y in G.edges]
+    df_edge = pd.DataFrame(edge_data, columns=("Source", "Target", "FW", "BK"))
+    df_edge_selected = df_edge[(df_edge['FW'] > 0) | (df_edge['BK'] > 0)]
+    st.dataframe(df_edge_selected, use_container_width=True)
+    
     st.header("Node Traffic")
     # Display the node attributes
-    node_data = [[n, G.nodes[n]['ttx'], G.nodes[n]['trx']] for n in G.nodes]
+    node_data = [[n, G.nodes[n]['tx'], G.nodes[n]['rx']] for n in G.nodes]
     df_node = pd.DataFrame(node_data, columns=("Node", "Outbound", "Inbound"))
 
-    st.table(df_node[(df_node['Outbound'] > 0) | (df_node['Inbound'] > 0)])
+    st.dataframe(df_node[(df_node['Outbound'] > 0) | (
+        df_node['Inbound'] > 0)], use_container_width=True)
 
     # Plotting the network graph
     st.header("Network Topology")
@@ -186,9 +201,9 @@ if topo_file is not None:
     # Plot a plain graph
     pos = st.session_state.pos
     nx.draw_networkx_edges(
-        G, pos, width=1, edge_color="#AAAAAA", arrows=False).zorder = 0
-    nx.draw_networkx_nodes(G, pos, node_color="#CFCFCF",
-                           edgecolors="#AAAAAA", node_size=500).zorder = 2
+        G, pos, width=1, edge_color=EDGE_COLOR, arrows=False).zorder = 0
+    nx.draw_networkx_nodes(G, pos, node_color=NODE_COLOR,
+                           edgecolors=EDGE_COLOR, node_size=500).zorder = 2
     # labels have have a zorder pf >3
     nx.draw_networkx_labels(G, pos, font_size=10, font_family="sans-serif")
 
@@ -233,9 +248,9 @@ if topo_file is not None:
                 path = nx.shortest_path(G, source=s, target=t)
                 path_edges = list(zip(path, path[1:]))
                 nx.draw_networkx_edges(
-                    G, pos, edgelist=path_edges, arrows=False, edge_color='#1f78b4', width=3, alpha=0.6).zorder = 0.5
+                    G, pos, edgelist=path_edges, arrows=False, edge_color=ROUTE_COLOR, width=3, alpha=0.6).zorder = 0.5
                 nx.draw_networkx_nodes(
-                    G, pos, nodelist=[s, t], node_color='#1f78b4', node_size=500, alpha=0.6).zorder = 2.5
+                    G, pos, nodelist=[s, t], node_color=ROUTE_COLOR, node_size=500, alpha=0.6).zorder = 2.5
 
     st.pyplot(fig)
 
