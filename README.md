@@ -33,16 +33,6 @@ To analyze a network, you can upload a text file containing the network in DOT f
 
 Alternatively, you can use the built-in example network by checking the "Use example network" checkbox.
 
-## Input
-
-The App takes in the form of traffic requirements between an pair of nodes in the network.
-
-
-## Output
-
-The app generates the following output:
-
-
 
 ## How to Use
 
@@ -59,6 +49,7 @@ To use the Flow Analyzer app, follow these steps:
 3. Upload the traffic flow information in CSV format by clicking on the "Upload Flow Information" button or edit the traffic flows using the editable dataframe.
 
 
+![UI](pics/ui.png)
 
 ## Input
 
@@ -67,6 +58,8 @@ The input to the Flow Analyzer app includes the following:
 - Network topology: The network topology must be in DOT format. The app allows the user to upload a network topology in DOT format or use the demo network.
 
 - Traffic flow information: The traffic flow information must be in CSV format. The app also allows the user to create or edit traffic flow information.
+
+- Spanning Tree: You can choose to apply Spanning Tree on the network by clicking on the checkbox "Apply Spanning Tree" in the sidebar.
 
 ## Output
 
@@ -92,9 +85,10 @@ The app displays information about the traffic flow at each node in the network 
 
 Only nodes with non-zero traffic are listed.
 
-### Graph visualization
+### Flow Visualization
 
-The app also displays a visualization of the network topology. Traffic flows and selected routes in the network are displayed.
+The app also displays a visualization of the network topology. Traffic flows and selected routes in the network are displayed. You can also filer the flows by source or target from the sidebar.
 
+![Flow Visualization](pics/plot.png)
 
 **Thank you for using the Flow Analyzer app!**
