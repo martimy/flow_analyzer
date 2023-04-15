@@ -7,10 +7,10 @@ Created on Sat Mar  4 11:27:12 2023
 
 import streamlit as st
 import networkx as nx
-import pydot
 import matplotlib.pyplot as plt
 import pandas as pd
 from io import StringIO
+from stp import get_stp
 
 # Inject CSS with Markdown to hide the index column in tables and dataframes
 hide_table_row_index = """
@@ -39,6 +39,7 @@ UPLOAD_FILE = "Upload a file or use demo network."
 EDIT_FLOWS = r"""Edit the table below to enter traffic information.
 To delete a row, select it from the left side then hit DEL. Use CTRL to select multiple rows.
 """
+STP_HELP = "Use in switched networks."
 
 DEMO_TOPOLOGY = "graph {1 -- 2;2 -- 3;3 -- 4;4 -- 1;A -- 1;B -- 2;C -- 3;D -- 4;}"
 DEMO_FLOWS = """Source,Target,Flow
@@ -46,9 +47,20 @@ A,B,1
 C,D,2
 """
 
+<<<<<<< HEAD
 EDGE_COLOR = "#AAAAAA"
 NODE_COLOR = "#CFCFCF"
 ROUTE_COLOR = "#1f78b4"
+=======
+# define a mapping between the 'speed' attribute and the 'weight' attribute
+speed_to_weight = {"10": 100, "100": 19, "1000": 4, "10000": 2}
+
+
+EDGE_COLOR = "#AAAAAA"
+NODE_COLOR = "#CFCFCF"
+ROUTE_COLOR = "#1f78b4"
+ROOT_COLOR = "#555555"
+>>>>>>> switching
 
 def remove_session_keys():
     # Remove all keys
@@ -83,6 +95,7 @@ def add_capacity(G, s, d, b):
             G.nodes[n]['tx'] += b
 
 
+<<<<<<< HEAD
 def create_graph(graph_str):
     # Parse the DOT format to create a Pydot graph object
     graph = pydot.graph_from_dot_data(graph_str)[0]
@@ -105,11 +118,14 @@ def create_graph(graph_str):
     return G
 
 
+=======
+>>>>>>> switching
 def create_flows():
     df = pd.DataFrame({'Source': [], 'Target': [], 'Flow': []})
     convert_dict = {'Source': str, 'Target': str}
     return df.astype(convert_dict)
 
+<<<<<<< HEAD
 
 # The following will appear in a sidebar
 with st.sidebar:
@@ -127,6 +143,55 @@ with st.sidebar:
         flow_file = st.file_uploader(
             "Upload Flow Information", type="csv", help=UPLOAD_FLOW_HELP)
 
+=======
+def assign_stp_attributes(ORG):
+    # Read the node's ID or create one based on its label
+    for node in ORG.nodes:
+        ORG.nodes[node]["ID"] = int(ORG.nodes[node].get(
+            "ID",  ''.join(map(str, map(ord, node)))))
+
+    # Read the edge's speed and set its weight attribute
+    for edge in ORG.edges:
+        # get the 'speed' attribute of the edge
+        edge_speed = ORG.edges[edge].get("speed", "100")
+
+        # map the 'speed' attribute to a 'weight' attribute using the speed_to_weight dictionary
+        edge_weight = speed_to_weight[edge_speed]
+        ORG.edges[edge]['weight'] = edge_weight
+            
+def assign_flow_attributes(G):
+    # Set node and edge attributes
+    for s, t in G.edges:
+        G.edges[s, t]["dr"] = f"{s},{t}"
+        G.edges[s, t]["fw"] = 0
+        G.edges[s, t]["bk"] = 0
+        G.edges[s, t]["bw"] = 0
+        
+    for node in G.nodes:
+        G.nodes[node]["tx"] = 0
+        G.nodes[node]["rx"] = 0
+
+
+graph_layouts = ['Spring', 'Circular', 'Kamada-Kawai', 'Planar']
+
+def get_graph_layout(G, layout):
+    if layout == 'Circular':
+        pos = nx.circular_layout(G)
+    elif layout == 'Kamada-Kawai':
+        pos = nx.kamada_kawai_layout(G)
+    elif layout == 'Planar':
+        pos = nx.planar_layout(G)
+    else:
+        pos = nx.spring_layout(G)
+    return pos
+
+# The following will appear in a sidebar
+with st.sidebar:
+    topo_file = st.file_uploader(
+        "Upload Network", type="dot", help=UPLOAD_TOPO_HELP)
+    flow_file = st.file_uploader(
+        "Upload Flow Information", type="csv", help=UPLOAD_FLOW_HELP)
+>>>>>>> switching
 
 # This will be the main page
 st.title(TITLE)
@@ -134,13 +199,28 @@ st.markdown(ABOUT)
 
 # Display an erroe message if there is no input topology or
 if topo_file is not None:
-    # Read the graph string from the file
-    if isinstance(topo_file, str):
-        graph_str = topo_file
+    # Load the graph from a DOT file
+    # Read the uploaded file using nx_pydot.read_dot()
+    dot_data = topo_file.read().decode("utf-8").replace('\r\n', '\n')
+
+    # Convert the Pydot graph to a NetworkX graph
+    ORG = nx.Graph(nx.drawing.nx_pydot.read_dot(StringIO(dot_data)))
+  
+    switching = st.sidebar.checkbox("Apply Spanning Tree", False, help=STP_HELP)
+    if switching:
+        assign_stp_attributes(ORG)
+        G = get_stp(ORG)
     else:
+<<<<<<< HEAD
         graph_str = topo_file.read().decode("utf-8")
 
     G = create_graph(graph_str)
+=======
+        G = ORG
+    
+    # Assign remaining attributes
+    assign_flow_attributes(G)
+>>>>>>> switching
 
     st.header("Traffic Flows")
     # Allow user to edit dataframe
@@ -168,7 +248,11 @@ if topo_file is not None:
             if (source in G.nodes) and (target in G.nodes) and (flow > 0):
                 add_capacity(G, row['Source'], row['Target'], row['Flow'])
             else:
+<<<<<<< HEAD
                 st.error(f"Unknown node or invalid flow at {index}.")
+=======
+                st.error(f"Unknown node or invalid flow at line {index}.")
+>>>>>>> switching
                 continue
         except Exception as e:
             st.error(e)
@@ -194,16 +278,33 @@ if topo_file is not None:
     fig, _ = plt.subplots()
     # fig = plt.figure()
 
+    layout = st.sidebar.selectbox('Select Graph Layout', graph_layouts)
+
     # Get positions for all nodes and save in a session state
     if 'pos' not in st.session_state:
-        st.session_state.pos = nx.spring_layout(G)
+        st.session_state.pos = get_graph_layout(ORG, layout)
+        # st.session_state.pos = nx.spring_layout(ORG)
 
     # Plot a plain graph
     pos = st.session_state.pos
+    line_style = 'dotted' if switching else 'solid'
     nx.draw_networkx_edges(
+<<<<<<< HEAD
         G, pos, width=1, edge_color=EDGE_COLOR, arrows=False).zorder = 0
     nx.draw_networkx_nodes(G, pos, node_color=NODE_COLOR,
                            edgecolors=EDGE_COLOR, node_size=500).zorder = 2
+=======
+        ORG, pos, width=1, edge_color=EDGE_COLOR, style=line_style).zorder = 0
+    # Draw the STP over the NetworkX graph G
+    if switching:
+        nx.draw_networkx_edges(G, pos=pos, edgelist=G.edges(),
+                               edge_color=EDGE_COLOR).zorder = 0.1
+        nx.draw_networkx_nodes(G, pos, nodelist=[G.graph["root"]], node_color=None, edgecolors=ROOT_COLOR, node_size=600).zorder = 2
+
+    nx.draw_networkx_nodes(G, pos, node_color=NODE_COLOR,
+                           edgecolors=EDGE_COLOR, node_size=500).zorder = 2
+    
+>>>>>>> switching
     # labels have have a zorder pf >3
     nx.draw_networkx_labels(G, pos, font_size=10, font_family="sans-serif")
 
@@ -231,11 +332,10 @@ if topo_file is not None:
                 # Filter dataframe based on user selection
                 df_flows = df_flows.loc[df_flows[filter_type] == filter_value]
 
-            G2 = nx.from_pandas_edgelist(df_flows, edge_attr=True)
-            nx.draw_networkx_edges(
-                G2, pos, width=3, edge_color='r', alpha=0.6).zorder = 1
+            G2 = nx.from_pandas_edgelist(df_flows, edge_attr=True, create_using=nx.DiGraph)
+            nx.draw_networkx_edges(G2, pos, width=2, edge_color='r', alpha=0.6) #.zorder = 1
             nx.draw_networkx_edge_labels(
-                G2, pos, edge_labels=nx.get_edge_attributes(G2, 'flow'), rotate=False)
+                G2, pos, edge_labels=nx.get_edge_attributes(G2, 'flow'))
 
     with checks[2]:
         # If selected draw all routes used by traffic flows
