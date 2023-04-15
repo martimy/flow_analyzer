@@ -120,6 +120,19 @@ def assign_flow_attributes(G):
         G.nodes[node]["rx"] = 0
 
 
+graph_layouts = ['Spring', 'Circular', 'Kamada-Kawai', 'Planar']
+
+def get_graph_layout(G, layout):
+    if layout == 'Circular':
+        pos = nx.circular_layout(G)
+    elif layout == 'Kamada-Kawai':
+        pos = nx.kamada_kawai_layout(G)
+    elif layout == 'Planar':
+        pos = nx.planar_layout(G)
+    else:
+        pos = nx.spring_layout(G)
+    return pos
+
 # The following will appear in a sidebar
 with st.sidebar:
     topo_file = st.file_uploader(
@@ -203,9 +216,12 @@ if topo_file is not None:
     fig, _ = plt.subplots()
     # fig = plt.figure()
 
+    layout = st.sidebar.selectbox('Select Graph Layout', graph_layouts)
+
     # Get positions for all nodes and save in a session state
     if 'pos' not in st.session_state:
-        st.session_state.pos = nx.spring_layout(ORG)
+        st.session_state.pos = get_graph_layout(ORG, layout)
+        # st.session_state.pos = nx.spring_layout(ORG)
 
     # Plot a plain graph
     pos = st.session_state.pos
