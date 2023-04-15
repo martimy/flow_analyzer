@@ -87,13 +87,27 @@ def add_capacity(G, s, d, b):
             G.nodes[n]['tx'] += b
 
 
-
 def create_flows():
     df = pd.DataFrame({'Source': [], 'Target': [], 'Flow': []})
     convert_dict = {'Source': str, 'Target': str}
     return df.astype(convert_dict)
 
-def assign_attributes(G):
+def assign_stp_attributes(ORG):
+    # Read the node's ID or create one based on its label
+    for node in ORG.nodes:
+        ORG.nodes[node]["ID"] = int(ORG.nodes[node].get(
+            "ID",  ''.join(map(str, map(ord, node)))))
+
+    # Read the edge's speed and set its weight attribute
+    for edge in ORG.edges:
+        # get the 'speed' attribute of the edge
+        edge_speed = ORG.edges[edge].get("speed", "100")
+
+        # map the 'speed' attribute to a 'weight' attribute using the speed_to_weight dictionary
+        edge_weight = speed_to_weight[edge_speed]
+        ORG.edges[edge]['weight'] = edge_weight
+            
+def assign_flow_attributes(G):
     # Set node and edge attributes
     for s, t in G.edges:
         G.edges[s, t]["dr"] = f"{s},{t}"
@@ -129,26 +143,13 @@ if topo_file is not None:
   
     switching = st.sidebar.checkbox("Switching", False)
     if switching:
-        # Read the node's ID or create one based on its label
-        for node in ORG.nodes:
-            ORG.nodes[node]["ID"] = int(ORG.nodes[node].get(
-                "ID",  ''.join(map(str, map(ord, node)))))
-
-        # Read the edge's speed and set its weight attribute
-        for edge in ORG.edges:
-            # get the 'speed' attribute of the edge
-            edge_speed = ORG.edges[edge].get("speed", "100")
-
-            # map the 'speed' attribute to a 'weight' attribute using the speed_to_weight dictionary
-            edge_weight = speed_to_weight[edge_speed]
-            ORG.edges[edge]['weight'] = edge_weight
-        
+        assign_stp_attributes(ORG)
         G = get_stp(ORG)
     else:
         G = ORG
 
     # Assign remaining attributes
-    assign_attributes(G)
+    assign_flow_attributes(G)
 
     st.header("Traffic Flows")
     # Allow user to edit dataframe
@@ -204,12 +205,18 @@ if topo_file is not None:
 
     # Get positions for all nodes and save in a session state
     if 'pos' not in st.session_state:
-        st.session_state.pos = nx.spring_layout(G)
+        st.session_state.pos = nx.spring_layout(ORG)
 
     # Plot a plain graph
     pos = st.session_state.pos
+    line_style = 'dotted' if switching else 'solid'
     nx.draw_networkx_edges(
-        G, pos, width=1, edge_color=EDGE_COLOR, arrows=False).zorder = 0
+        ORG, pos, width=1, edge_color=EDGE_COLOR, style=line_style).zorder = 0
+    # Draw the STP over the NetworkX graph G
+    if switching:
+        nx.draw_networkx_edges(G, pos=pos, edgelist=G.edges(),
+                               edge_color=EDGE_COLOR).zorder = 0.1      
+
     nx.draw_networkx_nodes(G, pos, node_color=NODE_COLOR,
                            edgecolors=EDGE_COLOR, node_size=500).zorder = 2
     # labels have have a zorder pf >3
