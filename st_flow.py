@@ -39,6 +39,7 @@ UPLOAD_FILE = "Upload a file or use demo network."
 EDIT_FLOWS = r"""Edit the table below to enter traffic information.
 To delete a row, select it from the left side then hit DEL. Use CTRL to select multiple rows.
 """
+STP_HELP = "Use in switched networks."
 
 DEMO_TOPOLOGY = "graph {1 -- 2;2 -- 3;3 -- 4;4 -- 1;A -- 1;B -- 2;C -- 3;D -- 4;}"
 DEMO_FLOWS = """Source,Target,Flow
@@ -53,6 +54,7 @@ speed_to_weight = {"10": 100, "100": 19, "1000": 4, "10000": 2}
 EDGE_COLOR = "#AAAAAA"
 NODE_COLOR = "#CFCFCF"
 ROUTE_COLOR = "#1f78b4"
+ROOT_COLOR = "#555555"
 
 def remove_session_keys():
     # Remove all keys
@@ -154,13 +156,13 @@ if topo_file is not None:
     # Convert the Pydot graph to a NetworkX graph
     ORG = nx.Graph(nx.drawing.nx_pydot.read_dot(StringIO(dot_data)))
   
-    switching = st.sidebar.checkbox("Switching", False)
+    switching = st.sidebar.checkbox("Apply Spanning Tree", False, help=STP_HELP)
     if switching:
         assign_stp_attributes(ORG)
         G = get_stp(ORG)
     else:
         G = ORG
-
+    
     # Assign remaining attributes
     assign_flow_attributes(G)
 
@@ -231,10 +233,12 @@ if topo_file is not None:
     # Draw the STP over the NetworkX graph G
     if switching:
         nx.draw_networkx_edges(G, pos=pos, edgelist=G.edges(),
-                               edge_color=EDGE_COLOR).zorder = 0.1      
+                               edge_color=EDGE_COLOR).zorder = 0.1
+        nx.draw_networkx_nodes(G, pos, nodelist=[G.graph["root"]], node_color=None, edgecolors=ROOT_COLOR, node_size=600).zorder = 2
 
     nx.draw_networkx_nodes(G, pos, node_color=NODE_COLOR,
                            edgecolors=EDGE_COLOR, node_size=500).zorder = 2
+    
     # labels have have a zorder pf >3
     nx.draw_networkx_labels(G, pos, font_size=10, font_family="sans-serif")
 
@@ -262,11 +266,10 @@ if topo_file is not None:
                 # Filter dataframe based on user selection
                 df_flows = df_flows.loc[df_flows[filter_type] == filter_value]
 
-            G2 = nx.from_pandas_edgelist(df_flows, edge_attr=True)
-            nx.draw_networkx_edges(
-                G2, pos, width=3, edge_color='r', alpha=0.6).zorder = 1
+            G2 = nx.from_pandas_edgelist(df_flows, edge_attr=True, create_using=nx.DiGraph)
+            nx.draw_networkx_edges(G2, pos, width=2, edge_color='r', alpha=0.6) #.zorder = 1
             nx.draw_networkx_edge_labels(
-                G2, pos, edge_labels=nx.get_edge_attributes(G2, 'flow'), rotate=False)
+                G2, pos, edge_labels=nx.get_edge_attributes(G2, 'flow'))
 
     with checks[2]:
         # If selected draw all routes used by traffic flows

@@ -42,11 +42,10 @@ def get_stp(G):
         tree.append(selected_path)
 
     # Create a new graph for the STP
-    spanning = nx.Graph()
+    spanning = nx.Graph(root=root_id)
     for branch in tree:
         if len(branch) > 1:
             s, t = branch[0:2]
             spanning.add_edge(s, t)
-
 
     return spanning
