@@ -22,8 +22,43 @@ MAX_INT = 2**63-1
 
 def get_stp(G):
     """
-    Apply the IEEE Spanning Tree Protocol for a graph G using ID and
-    weight attributes of the nodes and edges, respectively.
+    Apply the IEEE Spanning Tree Protocol (STP) for a graph G using the ID
+    and weight attributes of the nodes and edges, respectively. The STP
+    algorithm calculates the minimum cost spanning tree rooted at the node 
+    with the smallest ID.
+
+    Parameters:
+    -----------
+    G : NetworkX graph
+        A connected graph where each node has an "ID" attribute and every edge
+        has a "weight".
+
+    Returns:
+    --------
+    st : NetworkX graph
+        A graph representing the minimum cost spanning tree rooted at the
+        node with the smallest ID in the input graph.
+
+    Notes:
+    ------
+    The ID attribute of each node in the graph G must be a unique integer.
+    The weight attribute of each edge in the graph G must be a positive
+    integer. If there are multiple paths of equal length to the root node,
+    the path through the switch with the lowest ID is chosen.
+
+    Examples:
+    ---------
+    >>> import networkx as nx
+    >>> G = nx.Graph()
+    >>> G.add_node(1, ID=1)
+    >>> G.add_node(2, ID=2)
+    >>> G.add_node(3, ID=3)
+    >>> G.add_edge(1, 2, weight=2)
+    >>> G.add_edge(1, 3, weight=3)
+    >>> G.add_edge(2, 3, weight=1)
+    >>> st = get_stp(G)
+    >>> print(st.edges)
+    [(1, 2), (2, 3)]
     """
 
     # Find the root node with the smallest ID
