@@ -49,16 +49,17 @@ def get_stp(G):
     Examples:
     ---------
     >>> import networkx as nx
+    >>> from stp import get_stp
     >>> G = nx.Graph()
     >>> G.add_node(1, ID=1)
     >>> G.add_node(2, ID=2)
     >>> G.add_node(3, ID=3)
     >>> G.add_edge(1, 2, weight=2)
-    >>> G.add_edge(1, 3, weight=3)
+    >>> G.add_edge(1, 3, weight=5)
     >>> G.add_edge(2, 3, weight=1)
     >>> st = get_stp(G)
     >>> print(st.edges)
-    [(1, 2), (2, 3)]
+    [(2, 1), (2, 3)]
     """
 
     # Find the root node with the smallest ID
