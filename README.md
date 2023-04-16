@@ -9,13 +9,13 @@ This app analyzes traffic flows in the network and displays the results in tabul
 Clone this repository to your local machine using this command:
 
 ```bash
-$ git clone https://github.com/<USERNAME>/<REPOSITORY>.git
+$ git clone https://github.com/martimy/flow_analyzer
 ```
 
 Once you have cloned the repository, navigate to the directory and install the necessary libraries with this command:
 
 ```bash
-$ pip install -r requirements.txt
+$ pip3 install -r requirements.txt
 ```
 
 ## Usage
@@ -41,7 +41,7 @@ To use the Flow Analyzer app, follow these steps:
     $ streamlit run app.py
     ```
 
-2. Upload the network topology in DOT format by clicking on the "Upload Network" button. If you don't have a network topology, you can use the demo network by clicking on the "Use demo network" checkbox.
+2. Upload the network topology in DOT format by clicking on the "Upload Network" button. If you don't have a network topology, you can use the example network included in the repository.
 
 3. Upload the traffic flow information in CSV format by clicking on the "Upload Flow Information" button or edit the traffic flows using the editable dataframe.
 
@@ -52,11 +52,11 @@ To use the Flow Analyzer app, follow these steps:
 
 The input to the Flow Analyzer app includes the following:
 
-- Network topology: The network topology must be in DOT format. The app allows the user to upload a network topology in DOT format or use the demo network.
+- Network topology: The network topology must be in DOT format. The app allows the user to upload a network topology in DOT format.
 
-- Traffic flow information: The traffic flow information must be in CSV format. The app also allows the user to create or edit traffic flow information.
+- Traffic flow information: The traffic flow information must be in CSV format. The app also allows the user to create or edit traffic flow information directly in the app.
 
-- Spanning Tree: You can choose to apply Spanning Tree on the network by clicking on the checkbox "Apply Spanning Tree" in the sidebar.
+- Spanning Tree: You can choose to apply Spanning Tree on the network by clicking on the checkbox "Apply Spanning Tree" in the sidebar. The pp will select the root node based on its name (default) or using the "ID" attribute. See below.
 
 ## Output
 
@@ -68,7 +68,8 @@ The app displays information about the capacity and traffic flow on each link in
 
 - Source: The source node of the edge.
 - Target: The destination node of the edge.
-- Tx: The amount of traffic originated from the source node.
+- FW: The amount of traffic originated from the source node.
+- BK: The amount of traffic originated from the target node.
 
 Only links with non-zero traffic are listed.
 
@@ -84,11 +85,13 @@ Only nodes with non-zero traffic are listed.
 
 ### Flow Visualization
 
-The app also displays a visualization of the network topology. Traffic flows and selected routes in the network are displayed. You can also filer the flows by source or target from the sidebar.
+The app also displays a visualization of the network topology. Traffic flows and selected routes in the network are displayed. You can also filter the flows by source or target from the sidebar. The filter affect both the flows and the routes these flows take over the network. Filtering does not affect the bandwidth values displayed on the network links.
 
 ![Flow Visualization](pics/plot.png)
 
 ## File Formats
+
+Here is a description of the file formats needed by the app.
 
 ## DOT
 
