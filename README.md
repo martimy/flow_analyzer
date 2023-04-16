@@ -31,9 +31,6 @@ The app will open in your default web browser.
 
 To analyze a network, you can upload a text file containing the network in DOT format. The app will parse the file, create a network graph, and display information about the edges and nodes in the network.
 
-Alternatively, you can use the built-in example network by checking the "Use example network" checkbox.
-
-
 ## How to Use
 
 To use the Flow Analyzer app, follow these steps:
