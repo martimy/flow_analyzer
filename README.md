@@ -88,4 +88,58 @@ The app also displays a visualization of the network topology. Traffic flows and
 
 ![Flow Visualization](pics/plot.png)
 
+## File Formats
+
+## DOT
+
+A DOT file is a text file used to describe graphs. The graph in this file has nodes and edges connecting them, which can represent any relationship between them.
+
+In the particular file below, there are eight nodes representing a network of one server, three clients and four routers. The '--' represents a bidirectional connection between nodes. For example, there is an edge connecting R1 and R2, which means that there is a connection between these two nodes.
+
+Additional (optional) attributes may be needed for switched network to apply the Spanning Tree Protocol. Assigning an small "ID" attribute to a node ensures that it is selected as root of the tree. By default all links are assumed to be 100Mbps. Use the "speed" attribute to change the edge speed. Note that these attributes are case sensitive and they are only used to determine the spanning tree.  
+
+```dot{cmd=false}
+graph Netowrk {
+    R4 [ID=1];
+    R1 -- R2;
+    R2 -- R3;
+    R3 -- R4;
+    R4 -- R1;
+    Client_A -- R1 [speed=1000];
+    Client_B -- R2;
+    Client_C -- R3;
+    Server -- R4;    
+}
+```
+
+```dot{engine=neato}
+graph Netowrk {
+    R4 [ID=1];
+    R1 -- R2;
+    R2 -- R3;
+    R3 -- R4;
+    R4 -- R1;
+    Client_A -- R1 [speed=1000];
+    Client_B -- R2;
+    Client_C -- R3;
+    Server -- R4;    
+}
+```
+
+For more information about the DOT language go [here](https://graphviz.org/doc/info/lang.html)
+
+
+## CSV
+
+A CSV (Comma-Separated Values) file is a plain text file format that is commonly used to store tabular data, such as spreadsheets or databases. In a CSV file, each line represents a row of data, and the values in each row are separated by commas.
+
+A CSV file is used to upload traffic flow information between network node for traffic analysis. The example below shows the format needed for this app. The first line lists the columns' names (case sensitive). Each subsequent line represents the amount of traffic between the source and the destination of a data flow. The flows are directional, so traffic in the opposite direction must be specified separately.  
+
+```csv
+Source,Target,Flow
+Server,Client_A,10
+Server,Client_B,12
+Server,Client_C,8
+```
+
 **Thank you for using the Flow Analyzer app!**
