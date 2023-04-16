@@ -112,20 +112,6 @@ graph Netowrk {
 }
 ```
 
-```dot{engine=neato}
-graph Netowrk {
-    R4 [ID=1];
-    R1 -- R2;
-    R2 -- R3;
-    R3 -- R4;
-    R4 -- R1;
-    Client_A -- R1 [speed=1000];
-    Client_B -- R2;
-    Client_C -- R3;
-    Server -- R4;    
-}
-```
-
 For more information about the DOT language go [here](https://graphviz.org/doc/info/lang.html)
 
 
