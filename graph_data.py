@@ -19,15 +19,16 @@ from io import StringIO
 import networkx as nx
 
 # define a mapping between the 'speed' attribute and the 'weight' attribute
-speed_to_weight = {"10": 100, "100": 19, "1000": 4, "10000": 2}
+speed_to_weight = {"10": 100, "100": 19, "1000": 4, "10000": 2, "100000": 1}
+
 
 def assign_stp_attributes(ORG):
     """
     Assigns ID and weight attributes to nodes and edges of the input graph, respectively.
-    
+
     Parameters:
     ORG (networkx.Graph): Input graph to assign attributes to.
-    
+
     Returns:
     None
     """
@@ -42,21 +43,20 @@ def assign_stp_attributes(ORG):
         edge_speed = ORG.edges[edge].get("speed", "100")
 
         # map the 'speed' attribute to a 'weight' attribute using the speed_to_weight dictionary
-        edge_weight = speed_to_weight[edge_speed]
-        ORG.edges[edge]['weight'] = edge_weight
+        ORG.edges[edge]['weight'] = speed_to_weight[edge_speed]
 
 
 def assign_flow_attributes(G):
     """
     Assigns flow attributes to nodes and edges of the input graph.
-    
+
     Parameters:
     G (networkx.Graph): Input graph to assign attributes to.
-    
+
     Returns:
     None
     """
-    
+
     for s, t in G.edges:
         G.edges[s, t]["dr"] = f"{s},{t}"
         G.edges[s, t]["fw"] = 0
@@ -66,22 +66,23 @@ def assign_flow_attributes(G):
     for node in G.nodes:
         G.nodes[node]["tx"] = 0
         G.nodes[node]["rx"] = 0
-        
+
+
 def add_capacity(G, s, d, b):
     """
     Adds a specified amount of traffic to the edges and nodes along the shortest path from
     source to destination nodes.
-    
+
     Parameters:
     G (networkx.Graph): Input graph to add capacity to.
     s (int): Source node ID.
     d (int): Destination node ID.
     b (float): Amount of traffic to be added to the graph.
-    
+
     Returns:
     None
     """
-    
+
     nodes_list = nx.shortest_path(G, source=s, target=d)
     edges = list(zip(nodes_list, nodes_list[1:]))
 
@@ -105,13 +106,14 @@ def add_capacity(G, s, d, b):
             G.nodes[n]['rx'] += b
             G.nodes[n]['tx'] += b
 
+
 def get_dot_graph(dot_data):
     """
     Reads a DOT graph description string and returns a NetworkX graph object.
-    
+
     Parameters:
     dot_data (str): A string containing the DOT graph description.
-    
+
     Returns:
     networkx.Graph: The graph object created from the DOT graph description.
     """
