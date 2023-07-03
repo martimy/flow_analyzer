@@ -1,4 +1,4 @@
 streamlit
-networkx
-matplotlib
 pandas
+networkx
+pydot
