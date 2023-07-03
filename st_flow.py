@@ -17,6 +17,7 @@ limitations under the License.
 
 import streamlit as st
 import pandas as pd
+import time
 from stp import get_stp
 from plotting import plot_graph
 import graph_data as gd
@@ -115,7 +116,7 @@ def analyze_flows(topo_file, flow_file):
     else:
         df = pd.read_csv(flow_file)
 
-    df_flows = st.experimental_data_editor(
+    df_flows = st.data_editor(
         df, num_rows="dynamic", use_container_width=True)
 
     # The user must enter the source and target nodes correctly
@@ -135,6 +136,14 @@ def analyze_flows(topo_file, flow_file):
         except Exception as e:
             st.error(e)
 
+    # Add a button to save the DataFrame
+    if st.button('Save Flows'):
+        df_flows.to_csv('flows.csv', index=False)
+        placeholder = st.empty()
+        placeholder.success('Flows saved to CSV file!')
+        time.sleep(1) # Wait for 3 seconds
+        placeholder.empty()
+            
     st.header("Link Traffic")
     # Display the edge flows
     edge_data = [G[x][y]['dr'].split(

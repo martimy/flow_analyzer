@@ -23,7 +23,7 @@ $ pip3 install -r requirements.txt
 To run the app, execute the following command in your terminal:
 
 ```bash
-$ streamlit run app.py
+$ streamlit run st_flow.py
 ```
 
 The app will open in your default web browser.
