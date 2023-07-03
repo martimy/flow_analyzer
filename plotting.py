@@ -25,7 +25,36 @@ NODE_COLOR = "#CFCFCF"
 ROUTE_COLOR = "#1f78b4"
 ROOT_COLOR = "#555555"
 
-graph_layouts = ['Spring', 'Circular', 'Kamada-Kawai', 'Planar']
+graph_layouts = ["Spring", "Circular", "Kamada-Kawai", "Planar", "Bipartite"]
+
+
+def get_bipartite_nodes(G):
+    """
+    Returns nodes with attribute bipartite=0.
+
+    Parameters:
+    -----------
+    G : nx.Graph
+        The graph object for which the layout needs to be determined.
+
+    Returns:
+    --------
+    bipartite_0 : list
+        A list containing the nodes.
+    """
+
+    bipartite_0 = []
+
+    # Loop through the nodes and check their attributes
+    for node in G.nodes:
+        # Get the node attributes as a dictionary
+        attr = G.nodes[node]["bipartite"]
+        # Check if the value of "bipartite" is 0
+        if attr == 0:
+            # Add the node to the list
+            bipartite_0.append(node)
+
+    return bipartite_0
 
 
 def get_graph_layout(G, layout):
@@ -37,7 +66,7 @@ def get_graph_layout(G, layout):
     G : nx.Graph
         The graph object for which the layout needs to be determined.
     layout : str
-        The layout to be used for the graph. It can be 
+        The layout to be used for the graph. It can be
         'Spring', 'Circular', 'Kamada-Kawai', or 'Planar'.
 
     Returns:
@@ -46,12 +75,18 @@ def get_graph_layout(G, layout):
         A dictionary containing the positions of the nodes.
     """
 
-    if layout == 'Circular':
+    if layout == "Circular":
         pos = nx.circular_layout(G)
-    elif layout == 'Kamada-Kawai':
+    elif layout == "Kamada-Kawai":
         pos = nx.kamada_kawai_layout(G)
-    elif layout == 'Planar':
+    elif layout == "Planar":
         pos = nx.planar_layout(G)
+    elif layout == "Bipartite":
+        bipartite = get_bipartite_nodes(G)
+        if bipartite:
+            pos = nx.bipartite_layout(G, nodes=bipartite, align="horizontal", scale=-1)
+        else:
+            pos = nx.spring_layout(G)
     else:
         pos = nx.spring_layout(G)
     return pos
@@ -81,27 +116,36 @@ def plot_graph(ORG, G, flows, switching):
     fig, _ = plt.subplots()
     # fig = plt.figure()
 
-    layout = st.sidebar.selectbox('Select Graph Layout', graph_layouts)
+    layout = st.sidebar.selectbox("Select Graph Layout", graph_layouts)
 
     # Get positions for all nodes and save in a session state
-    if 'pos' not in st.session_state:
+    if "pos" not in st.session_state:
         st.session_state.pos = get_graph_layout(ORG, layout)
         # st.session_state.pos = nx.spring_layout(ORG)
 
     # Plot a plain graph
     pos = st.session_state.pos
-    line_style = 'dotted' if switching else 'solid'
+    line_style = "dotted" if switching else "solid"
     nx.draw_networkx_edges(
-        ORG, pos, width=1, edge_color=EDGE_COLOR, style=line_style).zorder = 0
+        ORG, pos, width=1, edge_color=EDGE_COLOR, style=line_style
+    ).zorder = 0
     # Draw the STP over the NetworkX graph G
     if switching:
-        nx.draw_networkx_edges(G, pos=pos, edgelist=G.edges(),
-                               edge_color=EDGE_COLOR).zorder = 0.1
-        nx.draw_networkx_nodes(G, pos, nodelist=[
-                               G.graph["root"]], node_color=None, edgecolors=ROOT_COLOR, node_size=600).zorder = 2
+        nx.draw_networkx_edges(
+            G, pos=pos, edgelist=G.edges(), edge_color=EDGE_COLOR
+        ).zorder = 0.1
+        nx.draw_networkx_nodes(
+            G,
+            pos,
+            nodelist=[G.graph["root"]],
+            node_color=None,
+            edgecolors=ROOT_COLOR,
+            node_size=600,
+        ).zorder = 2
 
-    nx.draw_networkx_nodes(G, pos, node_color=NODE_COLOR,
-                           edgecolors=EDGE_COLOR, node_size=500).zorder = 2
+    nx.draw_networkx_nodes(
+        G, pos, node_color=NODE_COLOR, edgecolors=EDGE_COLOR, node_size=500
+    ).zorder = 2
 
     # labels have have a zorder pf >3
     nx.draw_networkx_labels(G, pos, font_size=10, font_family="sans-serif")
@@ -112,7 +156,8 @@ def plot_graph(ORG, G, flows, switching):
         # If selected draw bandwidth labels
         if not flows.empty and st.checkbox("Link Bandwith", False):
             nx.draw_networkx_edge_labels(
-                G, pos, edge_labels=nx.get_edge_attributes(G, 'bw'))
+                G, pos, edge_labels=nx.get_edge_attributes(G, "bw")
+            )
 
     with checks[1]:
         # If selected draw flows
@@ -121,21 +166,23 @@ def plot_graph(ORG, G, flows, switching):
 
             # Select filter type and value
             filter_type = st.sidebar.selectbox(
-                'Filter by', ['none', 'source', 'target'])
-            if filter_type != 'none':
+                "Filter by", ["none", "source", "target"]
+            )
+            if filter_type != "none":
                 # Filter dataframe based on user selection
                 filter_values = flows[filter_type].unique()
                 # Select filter value from dropdown list
-                filter_value = st.sidebar.selectbox('Value', filter_values)
+                filter_value = st.sidebar.selectbox("Value", filter_values)
                 # Filter dataframe based on user selection
                 flows = flows.loc[flows[filter_type] == filter_value]
 
-            G2 = nx.from_pandas_edgelist(
-                flows, edge_attr=True, create_using=nx.DiGraph)
+            G2 = nx.from_pandas_edgelist(flows, edge_attr=True, create_using=nx.DiGraph)
             nx.draw_networkx_edges(
-                G2, pos, width=2, edge_color='r', alpha=0.6)  # .zorder = 1
+                G2, pos, width=2, edge_color="r", alpha=0.6
+            )  # .zorder = 1
             nx.draw_networkx_edge_labels(
-                G2, pos, edge_labels=nx.get_edge_attributes(G2, 'flow'))
+                G2, pos, edge_labels=nx.get_edge_attributes(G2, "flow")
+            )
 
     with checks[2]:
         # If selected draw all routes used by traffic flows
@@ -148,10 +195,21 @@ def plot_graph(ORG, G, flows, switching):
                 path = nx.shortest_path(G, source=s, target=t)
                 path_edges = list(zip(path, path[1:]))
                 nx.draw_networkx_edges(
-                    G, pos, edgelist=path_edges, arrows=False,
-                    edge_color=ROUTE_COLOR, width=3, alpha=0.6).zorder = 0.5
+                    G,
+                    pos,
+                    edgelist=path_edges,
+                    arrows=False,
+                    edge_color=ROUTE_COLOR,
+                    width=3,
+                    alpha=0.6,
+                ).zorder = 0.5
                 nx.draw_networkx_nodes(
-                    G, pos, nodelist=[s, t], node_color=ROUTE_COLOR,
-                    node_size=500, alpha=0.6).zorder = 2.5
+                    G,
+                    pos,
+                    nodelist=[s, t],
+                    node_color=ROUTE_COLOR,
+                    node_size=500,
+                    alpha=0.6,
+                ).zorder = 2.5
 
     st.pyplot(fig)

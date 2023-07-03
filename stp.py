@@ -17,14 +17,14 @@ limitations under the License.
 
 import networkx as nx
 
-MAX_INT = 2**63-1
+MAX_INT = 2**63 - 1
 
 
 def get_stp(G):
     """
     Apply the IEEE Spanning Tree Protocol (STP) for a graph G using the ID
     and weight attributes of the nodes and edges, respectively. The STP
-    algorithm calculates the minimum cost spanning tree rooted at the node 
+    algorithm calculates the minimum cost spanning tree rooted at the node
     with the smallest ID.
 
     Parameters:
@@ -74,7 +74,7 @@ def get_stp(G):
     # Find the shortest path to the root node for each node in order of distance
     short_routes = []
     for node in sorted_nodes:
-        paths = list(nx.all_shortest_paths(G, node, root_id, weight='weight'))
+        paths = list(nx.all_shortest_paths(G, node, root_id, weight="weight"))
 
         # If there are more than one equal path, choose the path through the
         # the switch with lowest ID

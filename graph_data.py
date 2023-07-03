@@ -34,8 +34,9 @@ def assign_stp_attributes(ORG):
     """
 
     for node in ORG.nodes:
-        ORG.nodes[node]["ID"] = int(ORG.nodes[node].get(
-            "ID",  ''.join(map(str, map(ord, node)))))
+        ORG.nodes[node]["ID"] = int(
+            ORG.nodes[node].get("ID", "".join(map(str, map(ord, node))))
+        )
 
     # Read the edge's speed and set its weight attribute
     for edge in ORG.edges:
@@ -43,7 +44,7 @@ def assign_stp_attributes(ORG):
         edge_speed = ORG.edges[edge].get("speed", "100")
 
         # map the 'speed' attribute to a 'weight' attribute using the speed_to_weight dictionary
-        ORG.edges[edge]['weight'] = speed_to_weight[edge_speed]
+        ORG.edges[edge]["weight"] = speed_to_weight[edge_speed]
 
 
 def assign_flow_attributes(G):
@@ -68,6 +69,21 @@ def assign_flow_attributes(G):
         G.nodes[node]["rx"] = 0
 
 
+def assign_bipartite_attributes(G):
+    """
+    Assigns bipartite attributes to nodes of the input graph.
+
+    Parameters:
+    G (networkx.Graph): Input graph to assign attributes to.
+
+    Returns:
+    None
+    """
+
+    for node in G.nodes:
+        G.nodes[node]["bipartite"] = int(G.nodes[node].get("bipartite", "1"))
+
+
 def add_capacity(G, s, d, b):
     """
     Adds a specified amount of traffic to the edges and nodes along the shortest path from
@@ -88,23 +104,23 @@ def add_capacity(G, s, d, b):
 
     # Add traffic to edges in both directions
     for x, y in edges:
-        if G[x][y]['dr'] == f"{x},{y}":
-            G[x][y]['fw'] += b
+        if G[x][y]["dr"] == f"{x},{y}":
+            G[x][y]["fw"] += b
         else:
-            G[x][y]['bk'] += b
-        G[x][y]['bw'] = max(G[x][y]['fw'], G[x][y]['bk'])
+            G[x][y]["bk"] += b
+        G[x][y]["bw"] = max(G[x][y]["fw"], G[x][y]["bk"])
 
     # Add traffic to source and traget nodes
     # The source transmits only and target receives only
-    G.nodes[d]['rx'] += b
-    G.nodes[s]['tx'] += b
+    G.nodes[d]["rx"] += b
+    G.nodes[s]["tx"] += b
 
     # All other intermediate nodes receive then transmit the same
     # amount of traffic
     if len(nodes_list) > 2:
         for n in nodes_list[1:-1]:
-            G.nodes[n]['rx'] += b
-            G.nodes[n]['tx'] += b
+            G.nodes[n]["rx"] += b
+            G.nodes[n]["tx"] += b
 
 
 def get_dot_graph(dot_data):

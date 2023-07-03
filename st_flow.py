@@ -70,8 +70,8 @@ def create_flows_frame():
     Returns:
         A pandas DataFrame with the columns 'Source', 'Target', and 'Flow'.
     """
-    df = pd.DataFrame({'Source': [], 'Target': [], 'Flow': []})
-    convert_dict = {'Source': str, 'Target': str}
+    df = pd.DataFrame({"Source": [], "Target": [], "Flow": []})
+    convert_dict = {"Source": str, "Target": str}
     return df.astype(convert_dict)
 
 
@@ -89,13 +89,12 @@ def analyze_flows(topo_file, flow_file):
 
     # Load the graph from a DOT file
     # Read the uploaded file using nx_pydot.read_dot()
-    dot_data = topo_file.read().decode("utf-8").replace('\r\n', '\n')
+    dot_data = topo_file.read().decode("utf-8").replace("\r\n", "\n")
 
     # Convert the Pydot graph to a NetworkX graph
     ORG = gd.get_dot_graph(dot_data)
 
-    switching = st.sidebar.checkbox(
-        "Apply Spanning Tree", False, help=STP_HELP)
+    switching = st.sidebar.checkbox("Apply Spanning Tree", False, help=STP_HELP)
     if switching:
         gd.assign_stp_attributes(ORG)
         G = get_stp(ORG)
@@ -104,6 +103,7 @@ def analyze_flows(topo_file, flow_file):
 
     # Assign remaining attributes
     gd.assign_flow_attributes(G)
+    gd.assign_bipartite_attributes(G)
 
     st.header("Traffic Flows")
     # Allow user to edit dataframe
@@ -116,20 +116,19 @@ def analyze_flows(topo_file, flow_file):
     else:
         df = pd.read_csv(flow_file)
 
-    df_flows = st.data_editor(
-        df, num_rows="dynamic", use_container_width=True)
+    df_flows = st.data_editor(df, num_rows="dynamic", use_container_width=True)
 
     # The user must enter the source and target nodes correctly
     # followed by +ve flow value
     # TODO: Find a way to restrict input to nodes that exit in the graph
     for index, row in df_flows.iterrows():
         try:
-            source = row.get('Source', '')
-            target = row.get('Target', '')
-            flow = row.get('Flow', 0)
+            source = row.get("Source", "")
+            target = row.get("Target", "")
+            flow = row.get("Flow", 0)
 
             if (source in G.nodes) and (target in G.nodes) and (flow > 0):
-                gd.add_capacity(G, row['Source'], row['Target'], row['Flow'])
+                gd.add_capacity(G, row["Source"], row["Target"], row["Flow"])
             else:
                 st.error(f"Unknown node or invalid flow at line {index}.")
                 continue
@@ -137,42 +136,45 @@ def analyze_flows(topo_file, flow_file):
             st.error(e)
 
     # Add a button to save the DataFrame
-    if st.button('Save Flows'):
-        df_flows.to_csv('flows.csv', index=False)
+    if st.button("Save Flows"):
+        df_flows.to_csv("flows.csv", index=False)
         placeholder = st.empty()
-        placeholder.success('Flows saved to CSV file!')
-        time.sleep(1) # Wait for 3 seconds
+        placeholder.success("Flows saved to CSV file!")
+        time.sleep(1)  # Wait for 3 seconds
         placeholder.empty()
-            
+
     st.header("Link Traffic")
     # Display the edge flows
-    edge_data = [G[x][y]['dr'].split(
-        ",") + [G[x][y]['fw'], G[x][y]['bk']] for x, y in G.edges]
+    edge_data = [
+        G[x][y]["dr"].split(",") + [G[x][y]["fw"], G[x][y]["bk"]] for x, y in G.edges
+    ]
     df_edge = pd.DataFrame(edge_data, columns=("Source", "Target", "FW", "BK"))
-    df_edge_selected = df_edge[(df_edge['FW'] > 0) | (df_edge['BK'] > 0)]
+    df_edge_selected = df_edge[(df_edge["FW"] > 0) | (df_edge["BK"] > 0)]
     st.dataframe(df_edge_selected, use_container_width=True)
 
     st.header("Node Traffic")
     # Display the node attributes
-    node_data = [[n, G.nodes[n]['tx'], G.nodes[n]['rx']] for n in G.nodes]
+    node_data = [[n, G.nodes[n]["tx"], G.nodes[n]["rx"]] for n in G.nodes]
     df_node = pd.DataFrame(node_data, columns=("Node", "Outbound", "Inbound"))
 
-    st.dataframe(df_node[(df_node['Outbound'] > 0) | (
-        df_node['Inbound'] > 0)], use_container_width=True)
+    st.dataframe(
+        df_node[(df_node["Outbound"] > 0) | (df_node["Inbound"] > 0)],
+        use_container_width=True,
+    )
 
     # Plotting the network graph
     plot_graph(ORG, G, df_flows, switching)
 
-    if st.button('Redraw'):
+    if st.button("Redraw"):
         # Needed to re-draw graph
-        if 'pos' in st.session_state:
+        if "pos" in st.session_state:
             del st.session_state["pos"]
             st.experimental_rerun()
 
 
 def app():
     """
-    The main application function that displays the user interface and handles 
+    The main application function that displays the user interface and handles
     the file uploads.
 
     Returns:
@@ -182,9 +184,11 @@ def app():
     # The following will appear in a sidebar
     with st.sidebar:
         topo_file = st.file_uploader(
-            "Upload Network", type="dot", help=UPLOAD_TOPO_HELP)
+            "Upload Network", type="dot", help=UPLOAD_TOPO_HELP
+        )
         flow_file = st.file_uploader(
-            "Upload Flow Information", type="csv", help=UPLOAD_FLOW_HELP)
+            "Upload Flow Information", type="csv", help=UPLOAD_FLOW_HELP
+        )
 
     # This will be the main page
     st.title(TITLE)
